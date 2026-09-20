@@ -1,0 +1,25 @@
+[
+  {
+    "name": "Product defects",
+    "matchedStatuses": ["failed"]
+  },
+  {
+    "name": "Test infrastructure problems",
+    "matchedStatuses": ["broken"],
+    "traceRegex": ".*(ConnectError|ConnectTimeout|ReadTimeout|ProxyError).*"
+  },
+  {
+    "name": "Timeouts",
+    "matchedStatuses": ["broken", "failed"],
+    "traceRegex": ".*TimeoutError.*"
+  },
+  {
+    "name": "Selector no longer matches",
+    "matchedStatuses": ["broken", "failed"],
+    "traceRegex": ".*(strict mode violation|waiting for locator).*"
+  },
+  {
+    "name": "Deselected or skipped",
+    "matchedStatuses": ["skipped"]
+  }
+]
