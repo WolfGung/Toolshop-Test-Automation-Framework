@@ -29,10 +29,13 @@ class Settings:
     slow_mo: int = int(os.getenv("SLOW_MO", "0"))
     mock_contact_api: bool = _flag("MOCK_CONTACT_API", True)
 
+    #: Milliseconds. The environment is shared and occasionally slow.
+    default_timeout: int = int(os.getenv("TIMEOUT_MS", "30000"))
+
     @property
-    def default_timeout(self) -> int:
-        """Milliseconds. The demo backend is shared and occasionally slow."""
-        return 15_000
+    def app_ready_timeout(self) -> int:
+        """The single-page app has to boot before anything is assertable."""
+        return self.default_timeout * 2
 
 
 settings = Settings()
