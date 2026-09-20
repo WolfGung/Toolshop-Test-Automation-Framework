@@ -1,0 +1,9 @@
+pytest==8.3.4
+pytest-playwright==0.6.2
+playwright==1.49.1
+pytest-rerunfailures==15.0
+pytest-xdist==3.6.1
+allure-pytest==2.13.5
+httpx==0.28.1
+pydantic==2.10.4
+python-dotenv==1.0.1

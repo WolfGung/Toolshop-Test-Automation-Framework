@@ -1,0 +1,9 @@
+services:
+  tests:
+    build: .
+    environment:
+      BASE_URL: ${BASE_URL:-https://practicesoftwaretesting.com}
+      API_BASE_URL: ${API_BASE_URL:-https://api.practicesoftwaretesting.com}
+      HEADLESS: "true"
+    volumes:
+      - ./allure-results:/suite/allure-results
