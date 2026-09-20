@@ -97,6 +97,7 @@ Copy `.env.example` to `.env` to override any of:
 | `API_BASE_URL` | `https://api.practicesoftwaretesting.com` | REST API |
 | `HEADLESS` | `true` | Browser visibility |
 | `SLOW_MO` | `0` | Milliseconds between actions, for debugging |
+| `TIMEOUT_MS` | `30000` | Default wait for UI assertions |
 | `MOCK_CONTACT_API` | `true` | Intercept writes instead of sending them |
 
 The browser engine is chosen with `pytest --browser firefox` (or `webkit`).
