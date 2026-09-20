@@ -137,3 +137,24 @@ docker compose run --rm tests pytest -m api
 every pull request and nightly. Browser tests get one rerun on failure; a test
 that only passes on the rerun is still reported as flaky rather than hidden.
 Allure results are uploaded as artefacts on every run, including failures.
+
+### The browser job is gated on reachability
+
+The hosted storefront answers **HTTP 403** to GitHub-hosted runners — it blocks
+data-centre IP ranges. A suite that reported this as 21 failing tests would be
+lying: nothing about the product is broken, the environment simply cannot be
+reached.
+
+So a preflight job probes the storefront and the browser job runs only on a
+200. Otherwise it is skipped with a notice explaining why. The API suite is
+unaffected and remains the gate on every push.
+
+Two things follow from this, and both are deliberate:
+
+- **Browser tests are run locally**, where the site is reachable. `make ui`
+  and `make e2e` do that.
+- **When the app does not render, the suite says so.** Page objects wait for
+  the application shell and fail with the navigation status and the contents
+  of `app-root`, rather than with "element not found" on whichever locator the
+  test happened to use first. That is how the 403 was identified in the first
+  place.
