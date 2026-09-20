@@ -51,6 +51,25 @@ shapes three decisions:
 - Reruns are set to 1 in CI only, and a rerun that passes is still reported as
   a flaky test rather than hidden.
 
+## Running against an environment that blocks automation
+
+The hosted storefront returns HTTP 403 to data-centre IP ranges, which
+includes GitHub-hosted runners. This is worth stating plainly because of how
+it shapes the pipeline:
+
+- The API suite runs in CI on every push and is the gate.
+- The browser suite is gated behind a reachability probe and skipped, with a
+  notice, when the storefront cannot be reached. A skipped job is the honest
+  outcome; 21 red tests would report a product failure that did not happen.
+- Browser tests are run locally, and on a self-hosted runner if this were a
+  real project.
+
+The page objects were changed to make this diagnosable: they wait for the
+application shell and, on failure, report the navigation status and what
+`app-root` actually contained. The first version of the suite reported the
+same situation as "locator a.card not found", which pointed at a selector bug
+that did not exist.
+
 ## What this strategy does not cover
 
 Accessibility, performance, security beyond one reflection check, and
