@@ -17,7 +17,8 @@ class HomePage(BasePage):
 
     @property
     def product_cards(self) -> Locator:
-        return self.page.locator("a.card")
+        """Product tiles, located by where they lead rather than by class."""
+        return self.page.locator('a[href^="/product/"]')
 
     @property
     def product_names(self) -> list[str]:
