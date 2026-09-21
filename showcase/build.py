@@ -18,14 +18,26 @@ import re
 import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from fnmatch import fnmatch
 from pathlib import Path
 from urllib.parse import urlparse
 
 LAYERS = ("api", "ui", "e2e")
 
-#: A recording shorter than this is a truncated file, not a video. The publish
-#: step applies the same floor when it picks a file to publish.
-MIN_VIDEO_BYTES = 10_000
+#: A recording smaller than this is a truncated file, not a video. The publish
+#: step applies the same floor with `find -size +10240c`, which is this number
+#: written the way find counts: both admit a file of more than 10 KiB.
+MIN_VIDEO_BYTES = 10 * 1024
+
+#: The recordings a run leaves, in the order the page prefers them. Both e2e
+#: cases are recorded and both are far above the floor above, so size cannot
+#: tell them apart; the complete order flow is the one worth showing, and the
+#: run that stops at the payment step is the fallback. The publish step picks
+#: by the same names, in the same order.
+PREFERRED_RECORDINGS = (
+    "*guest_can_place_an_order*.webm",
+    "*guest_reaches_payment_step*.webm",
+)
 
 ASSETS_DIR = Path(__file__).parent / "assets"
 
@@ -236,12 +248,20 @@ def _safe_url(url: str) -> str:
 
 
 def _pick_video(video_dir: Path) -> Path | None:
-    """The newest usable recording, chosen the way the publish step chooses."""
+    """The recording to publish, chosen the way the publish step chooses.
+
+    A run that only produced some other recording still gets a video, taken
+    in sorted order so two machines with the same files publish the same one.
+    """
     usable = sorted(
         p for p in Path(video_dir).glob("*.webm")
         if p.is_file() and p.stat().st_size > MIN_VIDEO_BYTES
     )
-    return usable[-1] if usable else None
+    for pattern in PREFERRED_RECORDINGS:
+        for candidate in usable:
+            if fnmatch(candidate.name, pattern):
+                return candidate
+    return usable[0] if usable else None
 
 
 def _place(source: Path | None, target: Path) -> bool:

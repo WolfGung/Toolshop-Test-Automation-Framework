@@ -366,3 +366,27 @@ def test_two_parameters_of_one_test_stay_two_tests(tmp_path: Path) -> None:
             attempt=f"-{browser}", parameters={"browser": browser},
         )
     assert summarise(tmp_path).total == 2
+
+
+# Which recording the page publishes, when a run leaves more than one.
+
+def test_the_complete_order_flow_is_preferred_over_the_shorter_one(
+    results: Path, tmp_path: Path
+) -> None:
+    """The publish step picks by name; this module has to pick the same file."""
+    videos = tmp_path / "videos"
+    videos.mkdir()
+    (videos / "guest-checkout-test_guest_can_place_an_order.webm").write_bytes(b"o" * 20_000)
+    (videos / "guest-checkout-test_guest_reaches_payment_step.webm").write_bytes(b"p" * 20_000)
+    out = tmp_path / "site"
+    build_site(results, out, revision="abc1234", run_url="", video_dir=videos)
+    assert (out / "media" / "checkout.webm").read_bytes() == b"o" * 20_000
+
+
+def test_a_truncated_recording_is_not_published(results: Path, tmp_path: Path) -> None:
+    """10 KiB is the floor, written the same way `find -size +10240c` writes it."""
+    videos = tmp_path / "videos"
+    videos.mkdir()
+    (videos / "guest-checkout-test_guest_can_place_an_order.webm").write_bytes(b"o" * 10_240)
+    page = _page(results, tmp_path, video_dir=videos)
+    assert "<video" not in page

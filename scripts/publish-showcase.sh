@@ -63,13 +63,16 @@ cp showcase/assets/*.svg "$SITE/assets/"
 # order. The order test is the complete flow, so it is published when present;
 # the payment-step recording is only a fallback. This is a deliberate choice
 # by name, not a guess by file size — both recordings are well above the
-# truncated-file floor, so size cannot tell them apart.
+# truncated-file floor, so size cannot tell them apart. `showcase/build.py`
+# picks by the same names in the same order, and `-size +10240c` is its
+# MIN_VIDEO_BYTES written in the units find counts: bytes, not 1 KB blocks,
+# so the two floors are the same 10 KiB rather than 10240 against 10000.
 video=""
 for pattern in \
   '*guest_can_place_an_order*.webm' \
   '*guest_reaches_payment_step*.webm'
 do
-  candidate=$(find "$VIDEOS" -name "$pattern" -size +10k 2>/dev/null | sort | head -1 || true)
+  candidate=$(find "$VIDEOS" -name "$pattern" -size +10240c 2>/dev/null | sort | head -1 || true)
   if [ -n "$candidate" ]; then
     video="$candidate"
     break
