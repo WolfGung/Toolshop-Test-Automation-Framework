@@ -1,4 +1,17 @@
+![Senior SDET — Python, test automation, API QA](guru-profile-banner-1000x250.png)
+
 # Toolshop — Quality Engineering Project
+
+[![tests](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml/badge.svg)](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml)
+[![live report](https://img.shields.io/badge/live%20report-Allure-brightgreen)](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/)
+
+**Start with the evidence:** [the live Allure report](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/) of the
+latest run on `main`, and [the checkout test as it runs](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/#recording) —
+both published by [the pipeline that had to pass first](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/).
+
+[![The Allure report of a full run against the stand: every case green, with the environment it ran in](allure-report-screenshot.png)](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/)
+
+![How the suite is put together: the test modules, the reusable layer beneath them, and the application under test running in Docker](showcase/assets/architecture.svg)
 
 A complete quality cycle for a web application, from reading an undocumented
 product to a maintained automated suite: scope and requirement gaps, a
@@ -23,6 +36,7 @@ down here and each decision is traceable to the test that implements it.
 | [Test strategy](docs/03-test-strategy.md) | Which layer each check belongs at, and how a shared environment shapes the design |
 | [Test design](docs/04-test-design-contact-form.md) | A worked example: equivalence classes and boundaries for one feature |
 | [Defect reporting](docs/05-defect-reporting.md) | The template, plus a finding that was verified and closed rather than filed |
+| [Environments and CI](docs/06-environments-and-ci.md) | Why the suite runs against two environments, what each is allowed to do, and how to read a skipped nightly run |
 
 ## Coverage
 
@@ -31,8 +45,12 @@ down here and each decision is traceable to the test that implements it.
 | API | 11 | Pagination, schema, search, price filtering, error codes |
 | UI | 19 | Catalog rendering, sorting, search, cart arithmetic, form validation |
 | E2E | 2 | Guest checkout through to payment selection |
+| Smoke (of the cases above) | 10 | The critical risks from the risk analysis, run on every deploy |
 
-10 of these carry the `smoke` marker and cover the critical risks.
+The suite also carries checks of its own tooling — configuration, and the
+build of the showcase page. The [live report](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/) counts
+those apart from the coverage above, because they prove nothing about the
+storefront.
 
 ## Stack
 
@@ -71,6 +89,23 @@ the browser and the payload is asserted instead of being sent — which also
 catches the bug class where a field is renamed or dropped on the way out. The
 one test that places a real order is deselected by default.
 
+## Two environments
+
+The hosted storefront belongs to somebody else, so the suite treats it as
+read-only: writes are intercepted and asserted instead of sent, and the one
+test that places an order is opt in. The stand — the same application, started
+from pinned images by `scripts/stand-up.sh` and seeded from scratch — is ours,
+so there the write paths run for real.
+
+That is also how the pipeline is split. The stand run is the gate on every
+pull request and every push to `main`, because a failure there is always about
+the code. The hosted site is watched nightly, and that run skips its browser
+job, with a notice, when the site answers 403 to the runner's address range.
+
+[Environments and CI](docs/06-environments-and-ci.md) sets out what each
+environment is allowed to do, why the stand's images are pinned by digest, and
+what a skipped nightly run does and does not mean.
+
 ## Running the suite
 
 ```bash
@@ -86,6 +121,15 @@ pytest --headed        # watch it run
 ```
 
 `make install`, `make smoke`, `make api`, `make report` wrap the same commands.
+
+To run against the disposable stand instead of the hosted site — the way CI
+runs it, writes included:
+
+```bash
+make stand       # start the application from pinned images and seed it
+make stand-test  # every layer against it, writes and order placement included
+make stand-down  # stop it and remove its data
+```
 
 ### Configuration
 
@@ -114,7 +158,10 @@ This places a real order on the shared demo backend. Run it deliberately.
 
 Every run writes to `allure-results/`. A failing test attaches a full-page
 screenshot, the page HTML, the URL and any console errors, so a red build in
-CI can be diagnosed without reproducing it locally.
+CI can be diagnosed without reproducing it locally. Each run also records the
+environment it ran in — the two base URLs, whether writes were intercepted,
+the Python version — which the report shows as its Environment panel, so a
+report read months later still says what it was run against.
 
 ```bash
 allure serve allure-results
@@ -133,10 +180,16 @@ docker compose run --rm tests pytest -m api
 
 ## CI
 
-`.github/workflows/tests.yml` runs API tests first, then browser tests, on
-every pull request and nightly. Browser tests get one rerun on failure; a test
-that only passes on the rerun is still reported as flaky rather than hidden.
-Allure results are uploaded as artefacts on every run, including failures.
+`.github/workflows/tests.yml` brings up the stand and runs every layer against
+it on every pull request and every push to `main`. Tests get one rerun on
+failure; a test that only passes on the rerun is still reported as flaky
+rather than hidden. Allure results are uploaded as artefacts on every run,
+including failures, and on `main` the same run publishes
+[the showcase page and its report](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/)
+from its own results.
+
+Nightly, and on demand, the workflow also runs against the hosted site: the
+API suite, and the browser suite behind a reachability probe.
 
 ### The browser job is gated on reachability
 
@@ -146,8 +199,9 @@ lying: nothing about the product is broken, the environment simply cannot be
 reached.
 
 So a preflight job probes the storefront and the browser job runs only on a
-200. Otherwise it is skipped with a notice explaining why. The API suite is
-unaffected and remains the gate on every push.
+200. Otherwise it is skipped with a notice explaining why. Nothing is gated on
+that run — the stand run is the gate, and it does not depend on anyone else's
+deployment.
 
 Two things follow from this, and both are deliberate:
 

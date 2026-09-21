@@ -57,12 +57,18 @@ The hosted storefront returns HTTP 403 to data-centre IP ranges, which
 includes GitHub-hosted runners. This is worth stating plainly because of how
 it shapes the pipeline:
 
-- The API suite runs in CI on every push and is the gate.
-- The browser suite is gated behind a reachability probe and skipped, with a
-  notice, when the storefront cannot be reached. A skipped job is the honest
-  outcome; 21 red tests would report a product failure that did not happen.
+- The gate is the whole suite run against a stand the pipeline starts itself,
+  where a failure is always about the code.
+- Against the hosted site, the browser suite is gated behind a reachability
+  probe and skipped, with a notice, when the storefront cannot be reached. A
+  skipped job is the honest outcome; 21 red tests would report a product
+  failure that did not happen.
 - Browser tests are run locally, and on a self-hosted runner if this were a
   real project.
+
+Which check runs in which environment, what each environment is allowed to do,
+and how to read a skip is the subject of
+[Environments and CI](06-environments-and-ci.md).
 
 The page objects were changed to make this diagnosable: they wait for the
 application shell and, on failure, report the navigation status and what
