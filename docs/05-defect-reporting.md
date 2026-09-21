@@ -53,3 +53,70 @@ which one is correct is a product decision, not a bug. It is recorded in
 as R2 so it reaches whoever owns that decision.
 
 **Severity if it were filed:** Low, usability.
+
+## Worked example — a race mistaken for a pricing defect
+
+`test_update_quantity_in_cart` failed reading `$14.15` where `$28.30` was
+expected after raising a line's quantity from 1 to 2. Read from the error
+message alone, that looks like the application charging for one unit while
+billing for two — a serious, headline-worthy defect. It was not filed on
+that reading; here is the check that ran first.
+
+**Observation.** Immediately after `product-quantity.fill("2")` and a Tab
+press, `cart-total` still read the pre-change figure. Reloading the page
+showed the correct, doubled total, which ruled out a server-side arithmetic
+error but did not yet explain the live read.
+
+**Verification.** Polled both figures on the running page every 20ms rather
+than trusting a single read after the fact:
+
+```
+t=0.042s line-price='$28.30' cart-total='$14.15'
+t=0.258s line-price='$28.30' cart-total='$28.30'
+```
+
+and the network log for the same interaction:
+
+```
+PUT /carts/{id}/product/quantity  {"product_id": "...", "quantity": 2}  -> 200
+GET /carts/{id}                                                          -> 200
+```
+
+`line-price` is computed client-side the instant the field blurs — before
+the server has agreed to anything. `cart-total` only follows once the PUT
+round-trips and the cart is refetched, roughly 200ms later on this stand.
+The failing test read `cart-total` in the gap between those two moments.
+
+**Outcome — not a defect.** The application always arrives at the correct,
+server-confirmed total; it just takes one network round trip to get there,
+which is ordinary for an async update. No report filed.
+
+**What it changed instead.** `CartPage.set_quantity` now waits for
+`cart-total` itself to change before returning, the same pattern
+`ProductPage.add_to_cart` already uses for the cart badge, rather than
+returning as soon as the keystroke was accepted.
+
+## Note — the other two clusters diagnosed in this pass were also drift, not defects
+
+The guest-checkout and contact-form failures investigated alongside the cart
+race (2026-09-21) had the same shape: the required behaviour was still
+present, reachable through markup or a flow step the page objects had not
+been updated for.
+
+- **Guest checkout.** "Continue as Guest" is now a tab next to "Sign in" (the
+  tab that is active by default), so `guest-email` existed in the DOM but was
+  hidden until the tab was selected. Submitting the guest panel then revealed
+  a separate `proceed-2-guest` control that advances the wizard to the
+  address step; the form submit alone did not. Confirmed live, both steps
+  restore the full guest flow through to an enabled "finish" button — fixed
+  in `CheckoutPage.continue_as_guest`.
+- **Contact form.** Validation used to nest every message as a `<div>` inside
+  one `data-test="message-error"` container; it now renders one independent
+  `alert-danger` banner per invalid field (`first-name-error`,
+  `last-name-error`, `email-error`, `subject-error`, `message-error`), each
+  its own live region. All five still render, in field order, on an empty
+  submission — fixed in `ContactPage.errors`.
+
+No test in either cluster needed its assertion weakened; each page object was
+updated to reach the same fact through the application's current markup or
+flow.
