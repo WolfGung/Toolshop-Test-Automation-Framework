@@ -19,7 +19,7 @@ Only behaviour that a user can actually see is driven through a browser.
 
 | Marker | Purpose | When to run |
 | --- | --- | --- |
-| `smoke` | The critical risks from the risk analysis | Every deploy, every pull request |
+| `smoke` | Risks 1–6 from the risk analysis — High or Critical | Every deploy, every pull request |
 | `api` | API-only, no browser | On every push; fastest feedback |
 | `ui` | Browser tests | Pull requests and nightly |
 | `e2e` | Full flows | Pull requests and nightly |

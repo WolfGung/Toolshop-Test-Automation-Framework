@@ -115,7 +115,7 @@ pip install -r requirements.txt
 playwright install chromium
 
 pytest                 # everything except tests that write data
-pytest -m smoke        # the critical set
+pytest -m smoke        # risks 1-6, High or Critical
 pytest -m api          # no browser needed, runs in seconds
 pytest -m "ui or e2e"  # browser tests
 pytest --headed        # watch it run
