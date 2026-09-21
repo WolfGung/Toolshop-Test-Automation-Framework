@@ -81,33 +81,35 @@ class SubmittedRequests(list):
 
 @pytest.fixture
 def mock_contact_api(page: Page) -> Iterator[SubmittedRequests]:
-    """Intercept writes to the demo backend and record them.
+    """Record what the application sent, in both modes.
 
     The backend is a shared instance used by everyone practising against this
     site. A test that only needs to prove the form posts the right payload
-    should not add noise to it, so POSTs are answered locally and captured.
-    Set MOCK_CONTACT_API=false to exercise the real endpoint instead.
+    should not add noise to it, so POSTs are answered locally there and
+    captured. Set MOCK_CONTACT_API=false to exercise the real endpoint
+    instead: the request still reaches the application, and it is still
+    captured, but the fixture only answers on the backend's behalf when the
+    backend is somebody else's.
     """
     captured = SubmittedRequests()
 
-    if not settings.mock_contact_api:
-        yield captured
-        return
+    def _matcher(url: object) -> bool:
+        return settings.api_base_url in str(url)
 
-    def _handler(route) -> None:  # type: ignore[no-untyped-def]
+    def _record(route) -> None:  # type: ignore[no-untyped-def]
         request = route.request
         if request.method != "POST":
             route.fallback()
             return
         captured.append({"url": request.url, "body": request.post_data_json})
-        route.fulfill(status=200, content_type="application/json", body="{}")
+        if settings.mock_contact_api:
+            route.fulfill(status=200, content_type="application/json", body="{}")
+        else:
+            route.continue_()
 
-    def _matcher(url: object) -> bool:
-        return settings.api_base_url in str(url)
-
-    page.route(_matcher, _handler)
+    page.route(_matcher, _record)
     yield captured
-    page.unroute(_matcher, _handler)
+    page.unroute(_matcher, _record)
 
 
 # ------------------------------------------------------------- reporting
