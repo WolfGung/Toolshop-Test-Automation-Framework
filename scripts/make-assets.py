@@ -19,6 +19,7 @@ Usage:
 """
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import tempfile
@@ -28,12 +29,13 @@ from playwright.sync_api import Page, sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# The public run to show in the README screenshot. Repointed once there is a
-# green run on `main` worth showing instead — the run currently pinned here
-# is a temporary branch trigger used to validate this pipeline, and its title
-# ("Temporarily trigger CI on pushes to showcase…") will look odd once this
-# branch has merged.
-CI_RUN_ID = "35592623127"
+# The public run to show in the README screenshot. Repointed whenever a newer
+# run on `main` is a better thing to show: the screenshot is read as "this is
+# what the pipeline does", so the pinned run has to be a push to `main` whose
+# title is a real commit subject and whose stand and publish jobs are both
+# green. Check https://github.com/WolfGung/Toolshop-Test-Automation-Framework/
+# actions?query=branch%3Amain before changing it.
+CI_RUN_ID = "35620987841"
 
 # Sized to what the profile expects; anything else is cropped by it.
 SHOTS = [
@@ -94,6 +96,58 @@ def _collected_test_count() -> int:
     return len(ids)
 
 
+def _summary_statistic(page: Page, summary_url: str) -> dict[str, int]:
+    """The overview's own numbers, or an explanation of why there are none.
+
+    A half-generated report is the ordinary failure here: the directory looks
+    like a report, the page even renders, but `widgets/summary.json` is
+    missing, truncated or is the server's 404 page. Left alone that surfaces
+    as a JSON decode error naming nothing, so every case is turned into a
+    sentence that says what was found at that URL and what to do about it.
+    """
+    fix = (
+        "Generate the report again before taking this screenshot:\n"
+        "  ~/.local/bin/allure generate allure-results --clean -o site/report\n"
+        "and serve it with `python -m http.server -d site 8899`."
+    )
+    response = page.request.get(summary_url)
+    if not response.ok:
+        raise RuntimeError(
+            f"{summary_url} answered HTTP {response.status}, so the report "
+            f"being photographed has no overview data. Either the report was "
+            f"never generated into site/report, or the server is not serving "
+            f"it.\n{fix}"
+        )
+    body = response.text()
+    try:
+        parsed = json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"{summary_url} is not JSON ({exc}); it starts with "
+            f"{body[:120]!r}. That is what a half-written report, or a web "
+            f"server answering with an HTML error page, looks like.\n{fix}"
+        ) from exc
+    statistic = parsed.get("statistic") if isinstance(parsed, dict) else None
+    if not isinstance(statistic, dict):
+        held = sorted(parsed) if isinstance(parsed, dict) else type(parsed).__name__
+        raise RuntimeError(
+            f"{summary_url} parsed, but it carries no 'statistic' object: it "
+            f"is {len(body)} byte(s) holding {held}. A complete report always "
+            f"has one.\n{fix}"
+        )
+    missing = sorted(
+        key for key in ("total", "failed", "broken", "unknown")
+        if not isinstance(statistic.get(key), int)
+    )
+    if missing:
+        raise RuntimeError(
+            f"{summary_url} reports a run without {', '.join(missing)}; its "
+            f"statistic is {statistic}. The counts this screenshot is checked "
+            f"against cannot be read from it.\n{fix}"
+        )
+    return statistic
+
+
 def _require_report_is_complete_and_green(page: Page) -> None:
     """Refuse to screenshot a report that is partial or has failures.
 
@@ -104,7 +158,7 @@ def _require_report_is_complete_and_green(page: Page) -> None:
     whether any of them failed.
     """
     summary_url = page.url.rstrip("/") + "/widgets/summary.json"
-    stat = page.request.get(summary_url).json()["statistic"]
+    stat = _summary_statistic(page, summary_url)
     not_green = stat["failed"] + stat["broken"] + stat["unknown"]
     expected = _collected_test_count()
     assert not_green == 0 and stat["total"] == expected, (
