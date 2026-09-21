@@ -1,5 +1,3 @@
-![Senior SDET — Python, test automation, API QA](guru-profile-banner-1000x250.png)
-
 # Toolshop — Quality Engineering Project
 
 [![tests](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml/badge.svg)](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml)
