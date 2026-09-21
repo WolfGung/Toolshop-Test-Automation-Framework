@@ -271,8 +271,11 @@ def _safe_url(url: str) -> str:
 def _pick_video(video_dir: Path) -> Path | None:
     """The recording to publish, chosen the way the publish step chooses.
 
-    A run that only produced some other recording still gets a video, taken
-    in sorted order so two machines with the same files publish the same one.
+    Only the two names in ``PREFERRED_RECORDINGS`` are ever the guest purchase
+    flow; anything else in the directory is some other recording and must not
+    be captioned as if it were that flow. A run that leaves neither preferred
+    file gets no video at all, exactly like ``scripts/publish-showcase.sh``,
+    which has no fallback either.
     """
     usable = sorted(
         p for p in Path(video_dir).glob("*.webm")
@@ -282,7 +285,7 @@ def _pick_video(video_dir: Path) -> Path | None:
         for candidate in usable:
             if fnmatch(candidate.name, pattern):
                 return candidate
-    return usable[0] if usable else None
+    return None
 
 
 def _place(source: Path | None, target: Path) -> bool:

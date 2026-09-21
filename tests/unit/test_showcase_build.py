@@ -110,12 +110,26 @@ def test_a_recording_that_exists_is_published_beside_the_page(
 ) -> None:
     videos = tmp_path / "videos"
     videos.mkdir()
-    (videos / "guest-checkout-a.webm").write_bytes(b"x" * 20_000)
+    (videos / "guest-checkout-test_guest_can_place_an_order.webm").write_bytes(b"x" * 20_000)
     out = tmp_path / "site"
     build_site(results, out, revision="abc1234", run_url="", video_dir=videos)
     page = (out / "index.html").read_text(encoding="utf-8")
     assert "<video" in page
     assert (out / "media" / "checkout.webm").read_bytes() == b"x" * 20_000
+
+
+def test_an_unrelated_recording_is_not_captioned_as_the_purchase_flow(
+    results: Path, tmp_path: Path
+) -> None:
+    """`_pick_video` must agree with `scripts/publish-showcase.sh`, which has
+    no fallback: a recording that is neither preferred name is not the guest
+    purchase flow, and publishing it under that caption would be wrong."""
+    videos = tmp_path / "videos"
+    videos.mkdir()
+    (videos / "some-other-recording.webm").write_bytes(b"x" * 20_000)
+    page = _page(results, tmp_path, video_dir=videos)
+    assert "<video" not in page
+    assert "recording" in page.lower()
 
 
 def test_a_missing_run_url_leaves_no_empty_link(results: Path, tmp_path: Path) -> None:
