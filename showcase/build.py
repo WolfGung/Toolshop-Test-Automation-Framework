@@ -12,12 +12,14 @@ video frame -- a showcase that shows a broken box has already lost the reader.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import re
 import shutil
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 LAYERS = ("api", "ui", "e2e")
 
@@ -34,6 +36,7 @@ class RunSummary:
     passed: int = 0
     failed: int = 0
     skipped: int = 0
+    unknown: int = 0
     smoke: int = 0
     by_layer: dict[str, int] = field(default_factory=dict)
     finished: datetime = datetime.fromtimestamp(0, tz=timezone.utc)
@@ -66,20 +69,61 @@ def summarise(results_dir: Path) -> RunSummary:
             summary.failed += 1
         elif status == "skipped":
             summary.skipped += 1
+        elif status == "unknown":
+            summary.unknown += 1
+        else:
+            # Every counted result has to land in a bucket the page can show.
+            # Silently dropping one produces a page whose own totals do not add
+            # up, which is the single thing this page cannot afford.
+            raise ValueError(
+                f"unrecognised Allure status {status!r} in {path.name}"
+            )
 
         tags = {l["value"] for l in body.get("labels", []) if l.get("name") == "tag"}
         if "smoke" in tags:
             summary.smoke += 1
-        for layer in LAYERS:
-            if layer in tags:
-                summary.by_layer[layer] += 1
-                break
+        layers = [layer for layer in LAYERS if layer in tags]
+        if len(layers) > 1:
+            # A case proves its thing at one layer; two markers means the
+            # selection rules in pytest.ini no longer mean what the page says
+            # they mean. Counting it once under whichever tag sorts first would
+            # hide that, and the layer totals would quietly stop adding up.
+            raise ValueError(
+                f"{body.get('name', path.name)} carries more than one layer "
+                f"tag ({', '.join(layers)}); a case belongs to one layer"
+            )
+        for layer in layers:
+            summary.by_layer[layer] += 1
         if body.get("stop"):
             stops.append(int(body["stop"]))
 
     if stops:
         summary.finished = datetime.fromtimestamp(max(stops) / 1000, tz=timezone.utc)
     return summary
+
+
+def _text(value: object) -> str:
+    """Escape a value for text or for an attribute's contents."""
+    return html.escape(str(value), quote=True)
+
+
+def _safe_url(url: str) -> str:
+    """An escaped http(s) or relative URL; empty for anything else.
+
+    The run URL arrives from the environment, and the page puts it in an
+    ``href``. Escaping alone would still let ``javascript:`` through, so the
+    scheme is checked as well and an unusable value is treated as no value:
+    the block that links the run is dropped rather than rendered broken.
+    """
+    candidate = url.strip()
+    if not candidate:
+        return ""
+    parsed = urlparse(candidate)
+    if parsed.scheme and parsed.scheme.lower() not in {"http", "https"}:
+        return ""
+    if candidate.startswith("//"):  # protocol-relative: not ours to resolve
+        return ""
+    return html.escape(candidate, quote=True)
 
 
 def _pick_video(video_dir: Path) -> Path | None:
@@ -135,6 +179,7 @@ def build_site(
     assets_dir: Path = ASSETS_DIR,
 ) -> None:
     summary = summarise(results_dir)
+    safe_run_url = _safe_url(run_url)
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -146,7 +191,9 @@ def build_site(
         "pipeline": _place(
             Path(assets_dir) / "ci-pipeline.svg", out_dir / "assets" / "ci-pipeline.svg"
         ),
-        "run": bool(run_url.strip()),
+        "run": bool(safe_run_url),
+        "skipped": summary.skipped > 0,
+        "unknown": summary.unknown > 0,
     }
 
     page = (Path(__file__).parent / "template.html").read_text(encoding="utf-8")
@@ -154,19 +201,25 @@ def build_site(
         page = _resolve(page, name, keep)
     page = _resolve(page, "diagrams", present["architecture"] or present["pipeline"])
 
+    # Everything below is escaped on its way into the page. The counts cannot
+    # carry markup and the revision comes from git, but a build tool for a
+    # client-facing page should not hold a working injection primitive at all.
+    # ``_safe_url`` has already escaped the run URL for its attribute.
     for key, value in {
-        "{{TOTAL}}": str(summary.total),
-        "{{PASSED}}": str(summary.passed),
-        "{{FAILED}}": str(summary.failed),
-        "{{SMOKE}}": str(summary.smoke),
-        "{{API}}": str(summary.by_layer.get("api", 0)),
-        "{{UI}}": str(summary.by_layer.get("ui", 0)),
-        "{{E2E}}": str(summary.by_layer.get("e2e", 0)),
-        "{{PRODUCT}}": str(summary.product),
-        "{{FRAMEWORK}}": str(summary.framework),
-        "{{FINISHED}}": summary.finished.strftime("%d %B %Y, %H:%M UTC"),
-        "{{REVISION}}": revision[:7],
-        "{{RUN_URL}}": run_url,
+        "{{TOTAL}}": _text(summary.total),
+        "{{PASSED}}": _text(summary.passed),
+        "{{FAILED}}": _text(summary.failed),
+        "{{SKIPPED}}": _text(summary.skipped),
+        "{{UNKNOWN}}": _text(summary.unknown),
+        "{{SMOKE}}": _text(summary.smoke),
+        "{{API}}": _text(summary.by_layer.get("api", 0)),
+        "{{UI}}": _text(summary.by_layer.get("ui", 0)),
+        "{{E2E}}": _text(summary.by_layer.get("e2e", 0)),
+        "{{PRODUCT}}": _text(summary.product),
+        "{{FRAMEWORK}}": _text(summary.framework),
+        "{{FINISHED}}": _text(summary.finished.strftime("%d %B %Y, %H:%M UTC")),
+        "{{REVISION}}": _text(revision[:7]),
+        "{{RUN_URL}}": safe_run_url,
     }.items():
         page = page.replace(key, value)
 

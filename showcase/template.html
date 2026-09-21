@@ -169,9 +169,17 @@
     <p>
       {{PRODUCT}} of those checks test the application — {{API}} against the REST
       API, {{UI}} through a browser, {{E2E}} end-to-end through the guest purchase
-      flow. The remaining
-      {{FRAMEWORK}} cover the suite's own plumbing: its configuration, and the
-      build of this page.
+      flow. That leaves
+      {{FRAMEWORK}} covering the suite's own plumbing: its configuration, and
+      the build of this page.
+<!--[if skipped]-->
+      {{SKIPPED}} of the {{TOTAL}} did not run: the suite skips a check it cannot
+      reach rather than reporting a failure the product did not cause.
+<!--[end skipped]-->
+<!--[if unknown]-->
+      {{UNKNOWN}} finished with no status the report could read, which is a
+      fault in the run rather than a verdict on the application.
+<!--[end unknown]-->
     </p>
     <p class="meta">
       Finished {{FINISHED}} against revision <code>{{REVISION}}</code>.
@@ -237,11 +245,15 @@
     <p>
       The suite starts from a ranked list of what costs the business money if it
       breaks, scored by impact and by how likely the feature is to break: eleven
-      risks, each one traceable to the test that covers it. The four rated
-      critical — a wrong total at checkout, add-to-cart failing silently, a guest
-      unable to finish an order, a catalog that renders empty — are the {{SMOKE}}
-      checks in the smoke set. If one of those fails, running the rest is a waste
-      of the pipeline's time.
+      risks, each one traceable to the test that covers it. Two are rated
+      critical — a wrong total at checkout, and add-to-cart failing silently —
+      and the smoke set takes the two ranked immediately below them as well: a
+      guest unable to finish an order, and a catalog that renders empty. Those
+      two are rated high rather than critical because they are judged less likely
+      to break, not because they would hurt less — and a deploy is exactly the
+      moment that judgement stops holding.
+      Together they are the {{SMOKE}} checks in the smoke set, and if one of them
+      fails, running the rest is a waste of the pipeline's time.
     </p>
     <p>
       A check then belongs at the lowest layer that can still prove the thing

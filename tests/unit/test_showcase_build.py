@@ -92,3 +92,102 @@ def test_a_recording_that_exists_is_published_beside_the_page(
 
 def test_a_missing_run_url_leaves_no_empty_link(results: Path, tmp_path: Path) -> None:
     assert 'href=""' not in _page(results, tmp_path)
+
+
+# A value that reaches the template is data, not markup. The revision and the
+# run URL arrive from git and from the CI environment; neither is trusted.
+
+def test_a_value_cannot_close_an_attribute_and_open_a_script(
+    results: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "site"
+    build_site(
+        results, out,
+        revision='abc1234"><script>alert(1)</script>',
+        run_url='https://example.com/"><script>alert(2)</script>',
+    )
+    page = (out / "index.html").read_text(encoding="utf-8")
+    assert "<script>" not in page
+    assert "&lt;script&gt;" in page
+
+
+def test_a_run_url_that_is_not_a_link_is_dropped_rather_than_rendered(
+    results: Path, tmp_path: Path
+) -> None:
+    out = tmp_path / "site"
+    build_site(results, out, revision="abc1234", run_url="javascript:alert(1)")
+    page = (out / "index.html").read_text(encoding="utf-8")
+    assert "javascript:" not in page
+    assert "that produced them is public" not in page  # the whole block is gone
+
+
+# Every result that is counted has to land somewhere a reader can see, or the
+# page shows a total it cannot account for.
+
+def test_a_skipped_result_is_counted_and_said_on_the_page(
+    results: Path, tmp_path: Path
+) -> None:
+    _result(results, "e", "skipped", "tests.ui.test_cart", ["ui"])
+    summary = summarise(results)
+    assert (summary.total, summary.skipped) == (5, 1)
+    assert summary.passed + summary.failed + summary.skipped + summary.unknown == 5
+    assert "did not run: the suite skips a check" in _page(results, tmp_path)
+
+
+def test_a_result_with_no_verdict_is_counted_as_unknown(results: Path) -> None:
+    _result(results, "e", "unknown", "tests.ui.test_cart", ["ui"])
+    summary = summarise(results)
+    assert summary.unknown == 1
+    assert summary.passed + summary.failed + summary.skipped + summary.unknown == 5
+
+
+def test_a_status_nobody_planned_for_stops_the_build(results: Path) -> None:
+    _result(results, "e", "pending", "tests.ui.test_cart", ["ui"])
+    with pytest.raises(ValueError, match="unrecognised Allure status"):
+        summarise(results)
+
+
+def test_a_case_at_two_layers_stops_the_build_instead_of_picking_one(
+    results: Path,
+) -> None:
+    _result(results, "e", "passed", "tests.ui.test_cart", ["api", "ui"])
+    with pytest.raises(ValueError, match="more than one layer tag"):
+        summarise(results)
+
+
+# The diagrams follow the same rule as the recording, in both directions.
+
+def test_diagrams_that_exist_are_published_beside_the_page(
+    results: Path, tmp_path: Path
+) -> None:
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    for name in ("architecture", "ci-pipeline"):
+        (assets / f"{name}.svg").write_text(f"<svg>{name}</svg>", encoding="utf-8")
+    out = tmp_path / "site"
+    build_site(results, out, revision="abc1234", run_url="", assets_dir=assets)
+    page = (out / "index.html").read_text(encoding="utf-8")
+    assert 'src="assets/architecture.svg"' in page
+    assert 'src="assets/ci-pipeline.svg"' in page
+    assert (out / "assets" / "ci-pipeline.svg").read_text(encoding="utf-8")
+
+
+def test_missing_diagrams_are_said_in_words_not_shown_as_broken_images(
+    results: Path, tmp_path: Path
+) -> None:
+    page = _page(results, tmp_path, assets_dir=tmp_path / "nothing")
+    assert 'src="assets/' not in page
+    assert "diagrams ship with the published build" in page
+
+
+def test_an_artefact_already_in_place_is_used_and_left_alone(
+    results: Path, tmp_path: Path
+) -> None:
+    """The publish step may copy artefacts in before or after this runs."""
+    out = tmp_path / "site"
+    (out / "media").mkdir(parents=True)
+    (out / "media" / "checkout.webm").write_bytes(b"already here")
+    build_site(results, out, revision="abc1234", run_url="",
+               video_dir=tmp_path / "nothing")
+    assert "<video" in (out / "index.html").read_text(encoding="utf-8")
+    assert (out / "media" / "checkout.webm").read_bytes() == b"already here"
