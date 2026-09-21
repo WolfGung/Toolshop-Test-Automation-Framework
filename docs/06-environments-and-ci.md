@@ -18,8 +18,10 @@ nobody here controls. It is the honest target for "does the application still
 work" — and it is the wrong place to prove that an order can be placed,
 because every proof leaves a real order in a shared database.
 
-The stand is the same application, started from the upstream project's own
-images by `scripts/stand-up.sh`, seeded from scratch, and thrown away at the
+The stand is the same application, brought up by `scripts/stand-up.sh` from
+images pinned by digest — the application's own images from upstream, the
+same third-party database image upstream runs, and an nginx ingress that is
+ours for the reason given below — seeded from scratch, and thrown away at the
 end of the run. It is ours, so it can be written to.
 
 Neither environment alone is enough. The hosted site is the only one that
@@ -48,7 +50,9 @@ suite moves to the stand — only whether the request is allowed through.
 
 ## Why the stand's images are pinned by digest
 
-`docker-compose.stand.yml` names every image by `@sha256:…`, not by a tag.
+`docker-compose.stand.yml` names every image by `@sha256:…`, not by a tag —
+the database included, which is the one every other service depends on and so
+the one where a moving tag would be felt everywhere at once.
 
 A showcase that goes red because somebody else published a release is a
 showcase nobody trusts. Tags move; the published page and the README quote
@@ -57,10 +61,17 @@ something about this repository, not about what upstream shipped this morning.
 Pinning turns "the suite broke" into "somebody changed the pin", which is a
 commit with a diff and a reason.
 
-One image is not upstream's: upstream publishes its `web` image for arm64
-only, so the stand serves the same application through official multi-arch
-nginx with upstream's own vhost (`stand/vhost.conf`). That is a deliberate
-substitution, recorded in the compose file next to the image it replaces.
+Two of the four images are not the application's own, and the compose file
+says so beside each:
+
+- **The database** is the third-party image upstream itself runs,
+  `yobasystems/alpine-mariadb`, at the tag upstream's own compose file names
+  (10.6.11) and pinned to the digest that tag resolves to.
+- **The ingress** is official nginx. Upstream publishes its `web` image for
+  arm64 only, so on the amd64 runners this suite targets it would run only
+  under QEMU emulation; the stand serves the same application through
+  multi-arch nginx configured with upstream's own vhost
+  (`stand/vhost.conf`) instead.
 
 ## Why the production run stopped being a gate
 
