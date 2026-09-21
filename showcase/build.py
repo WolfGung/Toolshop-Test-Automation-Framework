@@ -350,6 +350,7 @@ def build_site(
         "product_flaky": summary.product.flaky > 0,
         "framework": summary.framework.total > 0,
         "framework_clean": summary.framework.not_passed == 0,
+        "framework_flaky": summary.framework.flaky > 0,
     }
 
     page = (Path(__file__).parent / "template.html").read_text(encoding="utf-8")
@@ -376,6 +377,7 @@ def build_site(
         "{{E2E}}": _text(summary.by_layer.get("e2e", 0)),
         "{{FRAMEWORK}}": _text(summary.framework.total),
         "{{FRAMEWORK_OPEN}}": _text(summary.framework.not_passed),
+        "{{FRAMEWORK_FLAKY}}": _text(summary.framework.flaky),
         "{{RUN_TOTAL}}": _text(summary.total),
         "{{FINISHED}}": _text(summary.finished.strftime("%d %B %Y, %H:%M UTC")),
         "{{REVISION}}": _text(revision[:7]),

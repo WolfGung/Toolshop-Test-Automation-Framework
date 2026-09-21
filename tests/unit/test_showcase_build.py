@@ -302,6 +302,29 @@ def test_a_clean_framework_run_is_stated_as_such(results: Path, tmp_path: Path) 
     assert "All of them passed" in prose
 
 
+def test_a_flaky_framework_test_is_named_not_absorbed_into_all_passed(
+    results: Path, tmp_path: Path
+) -> None:
+    """A framework test that only passed on a rerun must not disappear into
+    "All of them passed" — that sentence would then be true only in a
+    technicality, the same gap the product-side flaky wording already closes.
+    The sentence must also not read as if the storefront itself flaked."""
+    _result(
+        results, "u1", "passed", "tests.unit.test_config", [],
+        attempt="-retry", history="u1-history", stop=1_758_400_060_000,
+    )
+    _result(
+        results, "u1", "failed", "tests.unit.test_config", [],
+        history="u1-history",
+    )
+    summary = summarise(results)
+    assert summary.framework.flaky == 1
+    prose = _prose(_page(results, tmp_path))
+    assert "All of them passed" in prose
+    assert "1 of them passed only on a second attempt" in prose
+    assert "this project's own tooling, not in the storefront" in prose
+
+
 def test_a_run_of_nothing_but_product_tests_says_nothing_about_plumbing(
     results: Path, tmp_path: Path
 ) -> None:

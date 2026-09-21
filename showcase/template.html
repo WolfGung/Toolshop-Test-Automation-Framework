@@ -192,7 +192,12 @@
 <!--[if framework_clean]-->
     <p>
       The same run also exercised {{FRAMEWORK}} checks of the framework itself:
-      its configuration, and the build of this page. All of them passed. They
+      its configuration, and the build of this page. All of them passed.
+<!--[if framework_flaky]-->
+      {{FRAMEWORK_FLAKY}} of them passed only on a second attempt — a flake in
+      this project's own tooling, not in the storefront it tests.
+<!--[end framework_flaky]-->
+      They
       are counted apart from the figures above because they prove nothing about
       the storefront; they are counted at all because the tooling that produced
       this page is tested too.
@@ -202,6 +207,10 @@
       The same run also exercised {{FRAMEWORK}} checks of the framework itself:
       its configuration, and the build of this page. {{FRAMEWORK_OPEN}} of them
       did not pass, which is a fault in the tooling and not in the application.
+<!--[if framework_flaky]-->
+      {{FRAMEWORK_FLAKY}} more passed only on a second attempt — also a flake in
+      the tooling, not in the storefront.
+<!--[end framework_flaky]-->
       It is stated here because the figures above would otherwise be green over
       a red run.
     </p>
