@@ -2,7 +2,7 @@
      role="img" aria-labelledby="ci-title ci-desc"
      font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
   <title id="ci-title">What CI does with every change</title>
-  <desc id="ci-desc">Three lanes. Top: on every push to main and every pull request, the pipeline starts the stand from four pinned images and seeds it — ready in 51 seconds — runs every layer with writes enabled and video recording on in 19 seconds, and collects allure-results, the videos and, on failure, the stand's logs. Middle: on main only, the same run restores the Allure history from the gh-pages branch, generates the report, builds this page from the run's own results and publishes to gh-pages, which GitHub Pages serves. Bottom: nightly at 06:00 UTC and on demand, the API suite runs against the public site and a probe checks whether the storefront answers HTTP 200; if it does, the browser suite runs, and if it does not, the run is skipped with a notice rather than failed.</desc>
+  <desc id="ci-desc">Three lanes. Top: on every push to main and every pull request, the pipeline starts the stand from four pinned images and seeds it, runs every layer with writes enabled and video recording on, and collects allure-results, the videos and, on failure, the stand's logs. Middle: on main only, the same run restores the Allure history from the gh-pages branch, generates the report, builds this page from the run's own results and publishes to gh-pages, which GitHub Pages serves. Bottom: nightly at 06:00 UTC and on demand, the API suite runs against the public site and a probe checks whether the storefront answers HTTP 200; if it does, the browser suite runs, and if it does not, the run is skipped with a notice rather than failed.</desc>
 
   <!-- The figure is referenced through <img>, so it cannot inherit a colour
        from the host page: it carries its own light plate and dark ink, and
@@ -49,13 +49,11 @@
   <text class="t2" x="330" y="136" text-anchor="middle">start the stand</text>
   <text class="m"  x="330" y="158" text-anchor="middle">four pinned images,</text>
   <text class="m"  x="330" y="176" text-anchor="middle">database seeded</text>
-  <text class="b"  x="330" y="198" text-anchor="middle">ready in 51 s</text>
 
   <rect class="box" x="440" y="110" width="180" height="106" rx="8"/>
   <text class="t2" x="530" y="136" text-anchor="middle">run every layer</text>
   <text class="m"  x="530" y="158" text-anchor="middle">API · UI · E2E, writes</text>
   <text class="m"  x="530" y="176" text-anchor="middle">enabled, video on</text>
-  <text class="b"  x="530" y="198" text-anchor="middle">19 s</text>
 
   <rect class="box" x="640" y="110" width="180" height="106" rx="8"/>
   <text class="t2" x="730" y="136" text-anchor="middle">collect the evidence</text>
