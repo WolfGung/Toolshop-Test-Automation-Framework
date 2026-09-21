@@ -186,6 +186,23 @@ def test_a_case_at_two_layers_stops_the_build_instead_of_picking_one(
         summarise(results)
 
 
+def test_a_product_test_with_no_layer_marker_stops_the_build_too(
+    results: Path,
+) -> None:
+    """A case under tests/api, tests/ui or tests/e2e that forgot its marker
+    must not quietly become a framework check: nothing else would catch it."""
+    _result(results, "e", "passed", "tests.api.test_products_api", [])
+    with pytest.raises(ValueError, match="tests/api"):
+        summarise(results)
+
+
+def test_an_unmarked_unit_test_is_still_ordinary_framework(results: Path) -> None:
+    """Only the product directories are suspect; tests/unit has no layer at all."""
+    _result(results, "e", "passed", "tests.unit.test_config", [])
+    summary = summarise(results)
+    assert summary.framework.total == 1
+
+
 # The diagrams follow the same rule as the recording, in both directions.
 
 def test_diagrams_that_exist_are_published_beside_the_page(

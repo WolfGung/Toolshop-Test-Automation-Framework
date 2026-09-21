@@ -212,6 +212,27 @@ def summarise(results_dir: Path) -> RunSummary:
                 f"{body.get('name', path.name)} carries more than one layer "
                 f"tag ({', '.join(layers)}); a case belongs to one layer"
             )
+        if not layers:
+            # A case that lives under tests/api, tests/ui or tests/e2e is a
+            # claim about the product; missing its layer tag is a mistake in
+            # the test, not a sign that it belongs with the framework's own
+            # checks. Left alone it would vanish from the product totals above
+            # and pad the framework count instead, with nothing failing.
+            qualifier = (body.get("fullName") or body.get("name") or path.name).split("#", 1)[0]
+            stray = next(
+                (
+                    layer for layer in LAYERS
+                    if qualifier == f"tests.{layer}" or qualifier.startswith(f"tests.{layer}.")
+                ),
+                None,
+            )
+            if stray is not None:
+                raise ValueError(
+                    f"{body.get('name', path.name)} sits under tests/{stray} "
+                    f"({qualifier}) but carries no layer tag; add the marker "
+                    f"for the layer it proves, or it silently drops out of the "
+                    f"product totals and inflates the framework count instead"
+                )
         for layer in layers:
             summary.by_layer[layer] += 1
 
