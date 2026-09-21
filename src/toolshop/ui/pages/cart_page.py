@@ -42,10 +42,25 @@ class CartPage(BasePage):
 
     @allure.step("Set quantity of row {index} to {value}")
     def set_quantity(self, value: int, index: int = 0) -> None:
+        """Change the quantity and wait for the cart total to be confirmed.
+
+        The line total updates on blur, instantly and client-side, before
+        the server has agreed. The cart total the page displays only follows
+        once the PUT to `/carts/{id}/product/quantity` round-trips and the
+        cart is refetched — about 200ms on this stand. Waiting on the line
+        price instead of the total looked right but returned as soon as the
+        client-side figure changed, before the confirmed total had, and read
+        stale: that is what `test_update_quantity_in_cart` was hitting, not
+        a pricing defect. Waiting on the total itself, the same pattern
+        `ProductPage.add_to_cart` uses for the cart badge, waits for the
+        figure the test actually asserts on.
+        """
         field = self.by_test("product-quantity").nth(index)
+        cart_total = self.by_test("cart-total")
+        before = cart_total.inner_text()
         field.fill(str(value))
-        # The row total is recalculated on blur, not on keystroke.
         field.press("Tab")
+        expect(cart_total).not_to_have_text(before, timeout=settings.default_timeout)
 
     @allure.step("Remove row {index} from the cart")
     def remove_row(self, index: int = 0) -> None:

@@ -8,11 +8,24 @@ from toolshop.data.factories import ContactMessage
 from toolshop.ui.pages.base_page import BasePage
 
 
+#: One `alert-danger` banner per invalid field, in the order the fields
+#: appear on the form. Older markup nested every message as a `<div>` inside
+#: a single `data-test="message-error"` container; the application now
+#: renders a separate, independently keyed container per field instead.
+_ERROR_TEST_IDS = (
+    "first-name-error",
+    "last-name-error",
+    "email-error",
+    "subject-error",
+    "message-error",
+)
+
+
 class ContactPage(BasePage):
     """Contact form.
 
-    Validation is client-side: submitting an incomplete form renders messages
-    inside an `.alert-danger` block and sends no request.
+    Validation is client-side: submitting an incomplete form renders one
+    `alert-danger` banner per invalid field and sends no request.
     """
 
     path = "/contact"
@@ -34,14 +47,10 @@ class ContactPage(BasePage):
 
     @property
     def errors(self) -> Locator:
-        """Individual validation messages inside the form's alert block."""
-        return self.by_test("message-error").locator("div")
+        """The currently rendered per-field validation banners, in field order."""
+        selector = ", ".join(f'[data-test="{test_id}"]' for test_id in _ERROR_TEST_IDS)
+        return self.page.locator(selector)
 
     @property
     def error_texts(self) -> list[str]:
         return [t.strip() for t in self.errors.all_inner_texts()]
-
-    @property
-    def alert(self) -> Locator:
-        """The alert container itself, which carries role="alert"."""
-        return self.by_test("message-error")
