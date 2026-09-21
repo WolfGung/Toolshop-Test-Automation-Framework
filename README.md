@@ -74,10 +74,10 @@ Three decisions worth calling out:
 
 **Locators are the application's own `data-test` attributes, wherever it
 provides one.** They are part of the markup contract, so a copy change or a
-restyle does not turn into a suite-wide failure. Where a control carries no
-such attribute — the checkout's guest tab is the one case — the locator keys
-on the routing fragment, `a[href="#guest-tab"]`, which is structural for the
-same reason. Visible copy is never a locator.
+restyle does not turn into a suite-wide failure. A few controls carry no
+such attribute: the checkout's guest tab is one, and it is addressed by its
+routing fragment, `a[href="#guest-tab"]`, which is structural for the same
+reason. Visible copy is never a locator.
 
 **There are no fixed sleeps.** Sorting, searching and filtering refetch the
 product grid; the suite waits for that response and then for the grid to
