@@ -42,6 +42,11 @@ STATED_COUNT = re.compile(r"^(\d+)\s*(.*)$")
 COVER_REGIONS = frozenset({"card", "passed"})
 COVER_PARTS = frozenset({"layer", "n", "t"})
 
+#: Collection normally finishes in well under a second (see `_collected`'s own
+#: docstring); this is generous enough to never fire on a merely slow machine,
+#: so a hit here means the subprocess actually hung, not that it ran long.
+COLLECT_TIMEOUT_SECONDS = 60
+
 #: The README's opening paragraph — everything above its first "## " heading —
 #: and the body of its Coverage section. Those are the two places it states a
 #: count, and the only two this test reads.
@@ -281,16 +286,26 @@ def _collected(selection: tuple[str, ...]) -> int:
     a third of a second and is cached per selection.
     """
     with tempfile.TemporaryDirectory() as spool:
-        proc = subprocess.run(
-            [
-                sys.executable, "-m", "pytest", "--collect-only", "-q",
-                "-p", "no:cacheprovider", f"--alluredir={spool}", *selection,
-            ],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-            env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}{os.pathsep}{ROOT}"},
-        )
+        try:
+            proc = subprocess.run(
+                [
+                    sys.executable, "-m", "pytest", "--collect-only", "-q",
+                    "-p", "no:cacheprovider", f"--alluredir={spool}", *selection,
+                ],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONPATH": f"{ROOT / 'src'}{os.pathsep}{ROOT}"},
+                timeout=COLLECT_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired as exc:
+            pytest.fail(
+                f"pytest --collect-only {shlex.join(selection)} did not finish "
+                f"within {COLLECT_TIMEOUT_SECONDS}s, waiting on collection that "
+                f"normally takes a fraction of a second — this is a hang, not a "
+                f"slow machine.\nstdout so far: {exc.stdout!r}\n"
+                f"stderr so far: {exc.stderr!r}"
+            )
     ids = [
         line for line in proc.stdout.splitlines()
         if line.startswith("tests/") and "::" in line
