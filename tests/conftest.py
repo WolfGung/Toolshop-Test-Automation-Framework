@@ -193,7 +193,27 @@ def pytest_runtest_makereport(item, call):  # type: ignore[no-untyped-def]
                       attachment_type=allure.attachment_type.TEXT)
 
 
-def pytest_configure(config: pytest.Config) -> None:
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Record the environment the run happened in, for the report's panel.
+
+    Allure reads ``environment.properties`` out of the results directory when
+    the report is generated, and shows it as the "Environment" panel — which
+    is where a reader of a published report finds out *what* was tested: which
+    stand, whether writes were intercepted, which Python.
+
+    This has to happen at session start rather than in ``pytest_configure``.
+    The allure plugin honours ``--clean-alluredir`` in its own ``configure``
+    hook by deleting the whole directory and recreating it; anything this file
+    wrote there first went with it, which is why the panel used to come out
+    empty. Session start runs after every ``configure`` hook, so the file
+    written here is still there when the run ends.
+
+    A collection-only run describes no environment and must not leave a file
+    in a directory the allure plugin deliberately did not clean.
+    """
+    config = session.config
+    if config.option.collectonly:
+        return
     try:
         configured = config.getoption("--alluredir")
     except ValueError:  # allure-pytest not installed
