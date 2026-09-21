@@ -1,10 +1,10 @@
 """Render the portfolio images from their sources.
 
 Editing the wording on a cover should be editing a line of text, not opening an
-image editor, so the cover is HTML and this script is the exporter. The two
-screenshots come from the real thing — a generated Allure report served over
-HTTP, and the public Actions page of this repository — so refreshing them is
-re-running this script rather than letting them age into a lie.
+image editor, so the cover is HTML and this script is the exporter. The report
+screenshot comes from the real thing, a generated Allure report served over
+HTTP, so refreshing it is re-running this script instead of letting it age
+into a lie.
 
 The profile banner is not rendered here. It is a profile-level asset, identical
 across the owner's projects, and it is committed as `guru-profile-banner-
@@ -29,37 +29,19 @@ from playwright.sync_api import Page, sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# The public run to show in the README screenshot. Repointed whenever a newer
-# run on `main` is a better thing to show: the screenshot is read as "this is
-# what the pipeline does", so the pinned run has to be a push to `main` whose
-# title is a real commit subject and whose stand and publish jobs are both
-# green. Check https://github.com/WolfGung/Toolshop-Test-Automation-Framework/
-# actions?query=branch%3Amain before changing it.
-CI_RUN_ID = "35620987841"
-
 # Sized to what the profile expects; anything else is cropped by it.
 SHOTS = [
     ("showcase/assets/cover.html", "guru-cover-image.png", 1536, 1024),
 ]
 
-# Both pages finish themselves after load: Allure draws the overview charts in
-# script, and the GitHub run page fills its job list in. So each one waits for
-# something it only shows when it is ready, then gets a moment to settle.
-#
-# `networkidle` is not usable here — GitHub holds a live connection open on the
-# run page and never goes idle, so waiting for idle only ever times out.
+# The report finishes itself after load: Allure draws the overview charts in
+# script. So the page waits for something it only shows once it is ready, then
+# gets a moment to settle.
 PAGES = [
     (
         "http://localhost:8899/report/",
         "allure-report-screenshot.png",
         "text=test cases",
-        1536,
-        1024,
-    ),
-    (
-        f"https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/runs/{CI_RUN_ID}",
-        "ci-screenshot.png",
-        "text=Total duration",
         1536,
         1024,
     ),
