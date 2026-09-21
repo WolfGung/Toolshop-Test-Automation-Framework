@@ -12,6 +12,13 @@ jobs:
   stand:
     name: Full suite on our own stand
     runs-on: ubuntu-latest
+    # The gate, and only the gate: a change proposed or landed here. The
+    # nightly schedule and a manual dispatch are the watch on the hosted
+    # storefront, which is what docs/06 and the pipeline diagram describe, and
+    # what the three jobs below are gated on. Without this the nightly also
+    # brought up the stand and ran the whole suite against it, so the schedule
+    # did something neither text mentioned.
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
