@@ -1,8 +1,9 @@
-"""Every count a showcase asset states is a count pytest collects.
+"""Every count the project states about itself is a count pytest collects.
 
-That covers the two diagrams on the page and the profile cover, which quotes
-the same numbers where nobody would notice them going stale: the cover is an
-exported image, so a client sees the number long after the suite moved on.
+That covers the two diagrams on the page, the profile cover, and the README's
+coverage table — three places quoting the same numbers where nobody would
+notice them going stale. The cover is worst: it is an exported image, so a
+client sees the number long after the suite moved on. The README is read most.
 """
 from __future__ import annotations
 
@@ -24,7 +25,8 @@ ASSETS = ROOT / "showcase" / "assets"
 SVG = "{http://www.w3.org/2000/svg}"
 FIGURES = ("architecture.svg", "ci-pipeline.svg")
 COVER = "cover.html"
-SOURCES = (*FIGURES, COVER)
+README = "README.md"
+SOURCES = (*FIGURES, COVER, README)
 
 #: "11 cases", and "1 case" if a figure ever has to say it.
 DRAWN_COUNT = re.compile(r"^(\d+) cases?$")
@@ -39,6 +41,22 @@ STATED_COUNT = re.compile(r"^(\d+)\s*(.*)$")
 #: the badge's second line, which states a number of its own.
 COVER_REGIONS = frozenset({"card", "passed"})
 COVER_PARTS = frozenset({"layer", "n", "t"})
+
+#: The README's opening paragraph — everything above its first "## " heading —
+#: and the body of its Coverage section. Those are the two places it states a
+#: count, and the only two this test reads.
+README_INTRO = re.compile(r"\A(.*?)^## ", re.MULTILINE | re.DOTALL)
+README_COVERAGE = re.compile(r"^## Coverage\s*$(.*?)(?=^## |\Z)", re.MULTILINE | re.DOTALL)
+
+#: A row of the README's coverage table: "| API | 11 | Pagination, schema… |".
+#: The second cell has to be the number and nothing else, which is what keeps
+#: this off the other tables in the file — their second cell holds prose, or a
+#: default written as code (`30000`).
+TABLE_ROW = re.compile(r"^\|\s*([^|]+?)\s*\|\s*(\d+)\s*\|", re.MULTILINE)
+
+#: The headline in the README's opening paragraph, which is also the number the
+#: showcase page leads with: "32 automated cases across API, UI and…".
+HEADLINE_COUNT = re.compile(r"(\d+) automated cases")
 
 #: HTML elements that never have an end tag, so they never go on the stack.
 VOID = frozenset(
@@ -57,15 +75,26 @@ FIX = {
         "scripts/make-assets.py), because the committed PNG still shows the old "
         "one. README.md quotes the same counts."
     ),
+    ".md": (
+        "Edit the number in {source} — the opening paragraph states the total "
+        "and the coverage table states the rest — and check showcase/assets, "
+        "which draws the same counts, and the showcase page, which reads them "
+        "out of the run it publishes."
+    ),
 }
 
-# Every count a showcase asset states, with the selection it claims to
+
+def _path(source: str) -> str:
+    """Where a source lives, for a message someone has to act on."""
+    return source if source == README else f"showcase/assets/{source}"
+
+# Every count the project states about itself, with the selection it claims to
 # describe. ``-m ""`` is what the gate job runs when the architecture figure
 # says "run every layer"; the nightly browser job runs ``-m "ui or e2e"``
-# itself. The cover counts the product only: its three cards are the three
-# layers, and its badge is those three together plus the smoke set, which is
-# why neither names a total for the whole run. Adding a count to an asset
-# without adding it here fails the last test in this module.
+# itself. The cover and the README count the product only: three layers, their
+# total, and the smoke set drawn from them — which is why neither names a total
+# for the whole run, where the framework's own checks are counted too. Adding a
+# count to a source without adding it here fails the last test in this module.
 CLAIMS: dict[tuple[str, str], tuple[str, ...]] = {
     ("architecture.svg", "tests/api"): ("-m", "", "tests/api"),
     ("architecture.svg", "tests/ui"): ("-m", "", "tests/ui"),
@@ -76,6 +105,11 @@ CLAIMS: dict[tuple[str, str], tuple[str, ...]] = {
     ("cover.html", "End-to-end"): ("-m", "", "tests/e2e"),
     ("cover.html", "N tests passed"): ("-m", "", "tests/api", "tests/ui", "tests/e2e"),
     ("cover.html", "N of them in the smoke set"): ("-m", "smoke"),
+    ("README.md", "N automated cases"): ("-m", "", "tests/api", "tests/ui", "tests/e2e"),
+    ("README.md", "API"): ("-m", "", "tests/api"),
+    ("README.md", "UI"): ("-m", "", "tests/ui"),
+    ("README.md", "E2E"): ("-m", "", "tests/e2e"),
+    ("README.md", "Smoke (of the cases above)"): ("-m", "smoke"),
 }
 
 
@@ -153,9 +187,52 @@ def _drawn_cover() -> dict[str, int]:
     return drawn
 
 
+@lru_cache(maxsize=None)
+def _drawn_readme() -> dict[str, int]:
+    """Every count the README states, keyed by the words that introduce it.
+
+    Two places state one, and only those two are read: the opening paragraph,
+    which gives the total the showcase page also leads with, and the rows of
+    the coverage table. Reading the whole file instead would pick up every
+    other number in it — an HTTP status, a default timeout, a viewport — and
+    the test below that insists every count found is checked would start
+    failing on prose.
+    """
+    text = (ROOT / README).read_text()
+    intro = README_INTRO.search(text)
+    coverage = README_COVERAGE.search(text)
+    assert intro and coverage, (
+        f"{README} no longer has an opening paragraph above its first heading "
+        f"and a '## Coverage' section, which are the two places this test "
+        f"reads. Restore them, or move this reader to wherever the counts went."
+    )
+
+    headline = HEADLINE_COUNT.search(intro.group(1))
+    assert headline, (
+        f"{README}'s opening paragraph no longer states a count matching "
+        f"{HEADLINE_COUNT.pattern!r}. It is the number the showcase page leads "
+        f"with; if the wording changed, change this pattern with it."
+    )
+    rows = TABLE_ROW.findall(coverage.group(1))
+    assert rows, (
+        f"{README}'s Coverage section has no table row of the shape "
+        f"'| <layer> | <count> |'. Without one this test would pass by "
+        f"finding nothing."
+    )
+
+    drawn = {"N automated cases": int(headline.group(1))}
+    for label, count in rows:
+        drawn[label] = int(count)
+    return drawn
+
+
 def _drawn_source(source: str) -> dict[str, int]:
-    """Every count `source` states, dispatched by how the two kinds are written."""
-    return _drawn_cover() if source == COVER else _drawn(source)
+    """Every count `source` states, dispatched by how each kind is written."""
+    if source == COVER:
+        return _drawn_cover()
+    if source == README:
+        return _drawn_readme()
+    return _drawn(source)
 
 
 @lru_cache(maxsize=None)
@@ -226,29 +303,30 @@ def _collected(selection: tuple[str, ...]) -> int:
 
 
 @pytest.mark.parametrize(("source", "box"), list(CLAIMS), ids=lambda v: v)
-def test_a_figure_draws_the_number_of_cases_pytest_collects(source: str, box: str) -> None:
+def test_a_source_states_the_number_of_cases_pytest_collects(source: str, box: str) -> None:
     selection = CLAIMS[(source, box)]
     drawn = _drawn_source(source).get(box)
     assert drawn is not None, (
-        f"showcase/assets/{source} no longer states a count in a box titled "
-        f'"{box}". Either the box was renamed, in which case fix CLAIMS in this '
-        f"file, or the count was dropped."
+        f"{_path(source)} no longer states a count under \"{box}\". Either it "
+        f"was renamed, in which case fix CLAIMS in this file, or the count was "
+        f"dropped."
     )
     collected = _collected(selection)
     assert drawn == collected, (
-        f'showcase/assets/{source} states {drawn} for "{box}", but pytest '
-        f"collects {collected}: `pytest {shlex.join(selection)}`.\n"
+        f'{_path(source)} states {drawn} for "{box}", but pytest collects '
+        f"{collected}: `pytest {shlex.join(selection)}`.\n"
         f"A test was added, removed or re-marked. "
         + FIX[Path(source).suffix].format(source=source)
     )
 
 
-def test_every_case_count_on_the_figures_is_checked() -> None:
+def test_every_case_count_the_project_states_is_checked() -> None:
     """Without this, a loose reading of the files would pass by finding nothing."""
     drawn = {(source, box) for source in SOURCES for box in _drawn_source(source)}
     assert drawn == set(CLAIMS), (
-        "the case counts found in showcase/assets do not match the ones this "
-        f"test checks.\n  found:   {sorted(drawn)}\n  checked: {sorted(CLAIMS)}\n"
+        "the case counts found in the showcase sources and the README do not "
+        f"match the ones this test checks.\n  found:   {sorted(drawn)}\n"
+        f"  checked: {sorted(CLAIMS)}\n"
         "A count added to a source needs a line in CLAIMS naming the pytest "
         "selection it describes; if nothing was found at all, the sources or the "
         "way this test reads them have changed."
