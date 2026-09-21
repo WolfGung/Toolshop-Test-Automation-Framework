@@ -51,12 +51,16 @@ def browser_type_launch_args(browser_type_launch_args: dict) -> dict:
 
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args: dict) -> dict:
-    return {
+    args = {
         **browser_context_args,
         "base_url": settings.base_url,
         "viewport": {"width": 1440, "height": 900},
         "locale": "en-GB",
     }
+    if settings.record_video:
+        args["record_video_dir"] = settings.video_dir
+        args["record_video_size"] = {"width": 1440, "height": 900}
+    return args
 
 
 @pytest.fixture(autouse=True)
@@ -73,6 +77,51 @@ def _page_defaults(request: pytest.FixtureRequest) -> Iterator[None]:
             if msg.type in {"error", "warning"} else None)
     request.node.stash_console = console  # type: ignore[attr-defined]
     yield
+
+
+@pytest.fixture(autouse=True)
+def _attach_video(request: pytest.FixtureRequest) -> Iterator[None]:
+    """Keep the checkout recording and discard every other video.
+
+    ``record_video_dir`` is a session-scoped context option, so once it is
+    set every browser test is recorded, not only the one that gets
+    published. Only the ``e2e`` checkout flow is meant to become the
+    showcase video, so this fixture renames that recording to a predictable
+    path and deletes the rest as soon as each test ends, rather than leaving
+    a later step to guess which file is the right one (e.g. by picking the
+    largest).
+
+    The ``page`` fixture is fetched *before* the ``yield``, exactly like
+    ``_page_defaults`` above: that is what keeps it alive across teardown.
+    Fetching it after the ``yield`` instead -- reading ``request.fixturenames``
+    is not enough on its own -- races the ``context``/``page`` fixtures' own
+    teardown in this pytest-playwright version and raises "fixture value for
+    'page' is not available"; this fixture must run, and close the page,
+    before that teardown happens, since Playwright only flushes the video
+    file on close.
+    """
+    if not settings.record_video or "page" not in request.fixturenames:
+        yield
+        return
+    page: Page = request.getfixturevalue("page")
+    yield
+    try:
+        video = page.video
+        if video is None:
+            return
+        page.close()
+        recorded = Path(video.path())
+        if request.node.get_closest_marker("e2e") is None:
+            recorded.unlink(missing_ok=True)
+            return
+        kept = Path(settings.video_dir) / f"guest-checkout-{request.node.name}.webm"
+        recorded.replace(kept)
+        allure.attach.file(
+            str(kept), name="video",
+            attachment_type=allure.attachment_type.WEBM,
+        )
+    except Exception:  # a recording is never worth failing a green test over
+        pass
 
 
 class SubmittedRequests(list):
