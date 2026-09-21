@@ -39,11 +39,16 @@ jobs:
         with:
           name: allure-results-stand
           path: allure-results
+      # A green run without a browser failure still records the two e2e
+      # flows, but a run can end with none — and an empty directory is not an
+      # error here, so it is not warned about either. What the publish job
+      # does when the artefact is missing is handled where it downloads it.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: videos
           path: videos
+          if-no-files-found: ignore
 
   showcase:
     name: Publish showcase
@@ -84,7 +89,15 @@ jobs:
         with:
           name: allure-results-stand
           path: allure-results
+      # The recording is optional and its absence must not kill the
+      # publication. `upload-artifact` creates no artifact at all for an empty
+      # `videos/`, and `download-artifact` answers that with "Unable to find
+      # an artifact", which failed the job outright — so the degradation both
+      # the publish script and showcase/build.py were written for could never
+      # run. Letting this one step fail leaves `videos/` empty, which is
+      # exactly the case they handle: the page says there is nothing to play.
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: videos
           path: videos
