@@ -1,0 +1,50 @@
+# docker-compose.stand.yml
+# A disposable copy of the application under test.
+#
+# Images come from the upstream project (testsmith-io/practice-software-testing)
+# and are pinned by digest: a showcase that goes red because somebody else
+# published a release is a showcase nobody trusts.
+name: toolshop-stand
+
+services:
+  mariadb:
+    image: yobasystems/alpine-mariadb:10.6.11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: toolshop
+    ports:
+      - "3306:3306"
+
+  laravel-api:
+    image: testsmith/practice-software-testing-sprint5-api@sha256:881cb7ecd76477994728648c0c16f6e9d2beed0f0217734843a32a7bb92553f0
+    depends_on:
+      - mariadb
+    environment:
+      - "PHP_OPCACHE_VALIDATE_TIMESTAMPS=1"
+      - "DB_PORT=3306"
+      - "DB_HOST=mariadb"
+      - "host=localhost"
+      - "DISABLE_LOGGING=true"
+    volumes:
+      - laravel-app-code:/var/www
+
+  web:
+    image: testsmith/practice-software-testing-web@sha256:950bafdc86501002c381e35d9b70e298fe211f4ab1fbfda334b67f03dffa048d
+    depends_on:
+      - laravel-api
+    volumes:
+      - laravel-app-code:/var/www
+    ports:
+      - "8091:80"
+      - "8000:81"
+
+  angular-ui:
+    image: testsmith/practice-software-testing-sprint5-ui@sha256:f907d8daae32dc90ba900e964928d00bf0aabfab7067eaeeaa49f5a0f70c52e6
+    ports:
+      - "4200:4200"
+    command: bash -c "ng serve --host 0.0.0.0 --port 4200"
+
+volumes:
+  laravel-app-code:
