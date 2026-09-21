@@ -40,16 +40,19 @@ class Tally:
     skipped: int = 0
     unknown: int = 0
     smoke: int = 0
+    flaky: int = 0
 
     @property
     def not_passed(self) -> int:
         """Everything that did not come back green, however it got there."""
         return self.total - self.passed
 
-    def record(self, status: str, smoke: bool, where: str) -> None:
+    def record(self, status: str, smoke: bool, flaky: bool, where: str) -> None:
         self.total += 1
         if smoke:
             self.smoke += 1
+        if flaky:
+            self.flaky += 1
         if status == "passed":
             self.passed += 1
         elif status in {"failed", "broken"}:
@@ -106,16 +109,85 @@ class RunSummary:
     def smoke(self) -> int:
         return self.product.smoke + self.framework.smoke
 
+    @property
+    def flaky(self) -> int:
+        return self.product.flaky + self.framework.flaky
+
+
+def _identity(body: dict, path: Path) -> str:
+    """What makes two result files two attempts at the same test.
+
+    ``historyId`` is Allure's own answer and is what its report groups on, so
+    it is used whenever the file carries one. A result written by something
+    that does not set it still has to be grouped, so the fallback is the pair
+    the history id is derived from anyway: the fully qualified name and the
+    parameters of the case. The file name is the last resort, which makes an
+    unidentifiable result its own test and keeps it counted.
+    """
+    history = body.get("historyId")
+    if history:
+        return f"history:{history}"
+    parameters = sorted(
+        (str(p.get("name")), str(p.get("value")))
+        for p in body.get("parameters", [])
+        if isinstance(p, dict)
+    )
+    name = body.get("fullName") or body.get("name")
+    if not name:
+        return f"file:{path.name}"
+    return f"name:{name}:{parameters}"
+
+
+def _published_attempt(attempts: list[tuple[Path, dict]]) -> tuple[Path, dict]:
+    """The attempt Allure shows for a test, out of all the attempts it made.
+
+    A rerun writes a second result file for the same test, and the report
+    counts the last attempt while keeping the earlier ones as retries. The
+    page has to agree with the report it sits beside, so it reads the same
+    attempt: the newest by the times the run recorded, with the file name
+    breaking a tie so the choice is stable across machines.
+    """
+    return max(
+        attempts,
+        key=lambda item: (
+            int(item[1].get("stop") or 0),
+            int(item[1].get("start") or 0),
+            item[0].name,
+        ),
+    )
+
 
 def summarise(results_dir: Path) -> RunSummary:
+    """Count one run, with each test counted once however often it ran.
+
+    ``pytest --reruns 1`` is what CI runs, and Allure writes one result file
+    per attempt: counting files would report three tests where two ran, and
+    would put a failure on the page beside a report that shows none. So the
+    files are grouped into tests first, and every figure the page states —
+    the totals, the smoke set, the layer split — is counted from the grouped
+    tests. A test that needed a rerun to pass is counted as the pass it ended
+    on and named separately as a flake, because the run that hides its reruns
+    is the one nobody can trust.
+    """
     files = sorted(Path(results_dir).glob("*-result.json"))
     if not files:
         raise ValueError(f"no Allure results in {results_dir}")
 
-    summary = RunSummary(by_layer={layer: 0 for layer in LAYERS})
+    attempts: dict[str, list[tuple[Path, dict]]] = {}
     stops: list[int] = []
     for path in files:
         body = json.loads(path.read_text(encoding="utf-8"))
+        attempts.setdefault(_identity(body, path), []).append((path, body))
+        if body.get("stop"):
+            stops.append(int(body["stop"]))
+
+    summary = RunSummary(by_layer={layer: 0 for layer in LAYERS})
+    for tries in attempts.values():
+        path, body = _published_attempt(tries)
+        status = body.get("status", "unknown")
+        flaky = status == "passed" and any(
+            other.get("status") != "passed" for _, other in tries if other is not body
+        )
         tags = {l["value"] for l in body.get("labels", []) if l.get("name") == "tag"}
 
         layers = [layer for layer in LAYERS if layer in tags]
@@ -132,12 +204,7 @@ def summarise(results_dir: Path) -> RunSummary:
             summary.by_layer[layer] += 1
 
         group = summary.product if layers else summary.framework
-        group.record(
-            body.get("status", "unknown"), "smoke" in tags, where=path.name
-        )
-
-        if body.get("stop"):
-            stops.append(int(body["stop"]))
+        group.record(status, "smoke" in tags, flaky, where=path.name)
 
     if stops:
         summary.finished = datetime.fromtimestamp(max(stops) / 1000, tz=timezone.utc)
@@ -236,6 +303,7 @@ def build_site(
         "run": bool(safe_run_url),
         "product_skipped": summary.product.skipped > 0,
         "product_unknown": summary.product.unknown > 0,
+        "product_flaky": summary.product.flaky > 0,
         "framework": summary.framework.total > 0,
         "framework_clean": summary.framework.not_passed == 0,
     }
@@ -258,6 +326,7 @@ def build_site(
         "{{SKIPPED}}": _text(summary.product.skipped),
         "{{UNKNOWN}}": _text(summary.product.unknown),
         "{{SMOKE}}": _text(summary.product.smoke),
+        "{{FLAKY}}": _text(summary.product.flaky),
         "{{API}}": _text(summary.by_layer.get("api", 0)),
         "{{UI}}": _text(summary.by_layer.get("ui", 0)),
         "{{E2E}}": _text(summary.by_layer.get("e2e", 0)),

@@ -10,15 +10,37 @@ import pytest
 from showcase.build import build_site, summarise
 
 
-def _result(tmp: Path, name: str, status: str, package: str, tags: list[str]) -> None:
+def _result(
+    tmp: Path,
+    name: str,
+    status: str,
+    package: str,
+    tags: list[str],
+    *,
+    attempt: str = "",
+    history: str | None = None,
+    stop: int = 1_758_400_000_000,
+    parameters: dict[str, str] | None = None,
+) -> None:
+    """One Allure result file, which is one *attempt* at a test.
+
+    A rerun writes a second file for the same test, carrying the same
+    ``historyId`` and a later ``stop``. ``attempt`` only names the file, so a
+    test can write more than one without overwriting itself.
+    """
     body = {
         "name": name,
+        "fullName": f"{package}#{name}",
         "status": status,
-        "stop": 1_758_400_000_000,
+        "stop": stop,
         "labels": [{"name": "package", "value": package}]
         + [{"name": "tag", "value": t} for t in tags],
     }
-    (tmp / f"{name}-result.json").write_text(json.dumps(body), encoding="utf-8")
+    if history is not None:
+        body["historyId"] = history
+    if parameters is not None:
+        body["parameters"] = [{"name": k, "value": v} for k, v in parameters.items()]
+    (tmp / f"{name}{attempt}-result.json").write_text(json.dumps(body), encoding="utf-8")
 
 
 @pytest.fixture
@@ -268,3 +290,79 @@ def test_what_the_page_shows_adds_up_to_what_it_says_ran(
     assert f"<b>{summary.product.total}</b><span>checks of the application" in page
     assert f"{summary.product.skipped} of the {summary.product.total} did not run" in _prose(page)
     assert f"run of {summary.total} results in all" in _prose(page)
+
+
+# A rerun writes a second result file for the same test. Counting files would
+# publish a total the report beside it contradicts, which is the one number
+# this page cannot get wrong.
+
+@pytest.fixture
+def results_with_a_rerun(results: Path) -> Path:
+    """Result `c` failed, was rerun by `--reruns 1`, and passed the second time."""
+    _result(
+        results, "c", "passed", "tests.ui.test_search", ["ui", "smoke"],
+        attempt="-retry", history="c-history", stop=1_758_400_060_000,
+    )
+    # The first attempt, rewritten to carry the same history id as the rerun.
+    _result(
+        results, "c", "failed", "tests.ui.test_search", ["ui", "smoke"],
+        history="c-history",
+    )
+    return results
+
+
+def test_a_rerun_is_one_test_not_two(results_with_a_rerun: Path) -> None:
+    summary = summarise(results_with_a_rerun)
+    assert (summary.total, summary.passed, summary.failed) == (4, 4, 0)
+
+
+def test_the_smoke_set_and_the_layers_count_a_rerun_once(
+    results_with_a_rerun: Path,
+) -> None:
+    """They are counted from the same files, so they need the same grouping."""
+    summary = summarise(results_with_a_rerun)
+    assert summary.smoke == 3
+    assert summary.by_layer == {"api": 1, "ui": 2, "e2e": 1}
+
+
+def test_the_verdict_is_the_attempt_the_report_shows(results_with_a_rerun: Path) -> None:
+    """Allure counts the last attempt; a page that disagreed would be wrong."""
+    summary = summarise(results_with_a_rerun)
+    assert (summary.product.passed, summary.product.failed) == (4, 0)
+
+
+def test_a_test_that_only_passed_on_a_rerun_is_named_on_the_page(
+    results_with_a_rerun: Path, tmp_path: Path
+) -> None:
+    assert summarise(results_with_a_rerun).product.flaky == 1
+    assert "1 of them passed only on a second attempt" in _prose(
+        _page(results_with_a_rerun, tmp_path)
+    )
+
+
+def test_a_clean_run_says_nothing_about_flakes(results: Path, tmp_path: Path) -> None:
+    assert summarise(results).product.flaky == 0
+    assert "second attempt" not in _prose(_page(results, tmp_path))
+
+
+def test_attempts_group_by_name_and_parameters_when_there_is_no_history_id(
+    tmp_path: Path,
+) -> None:
+    for attempt, status in (("-1", "failed"), ("-2", "passed")):
+        _result(
+            tmp_path, "x", status, "tests.ui.test_cart", ["ui"],
+            attempt=attempt, stop=1_758_400_000_000 + int(attempt[-1]),
+            parameters={"browser": "chromium"},
+        )
+    summary = summarise(tmp_path)
+    assert (summary.total, summary.passed) == (1, 1)
+
+
+def test_two_parameters_of_one_test_stay_two_tests(tmp_path: Path) -> None:
+    """The grouping must not swallow a parametrised case into its sibling."""
+    for browser in ("chromium", "firefox"):
+        _result(
+            tmp_path, "x", "passed", "tests.ui.test_cart", ["ui"],
+            attempt=f"-{browser}", parameters={"browser": browser},
+        )
+    assert summarise(tmp_path).total == 2

@@ -182,6 +182,11 @@
       {{UNKNOWN}} finished with no status the report could read, which is a
       fault in the run rather than a verdict on the application.
 <!--[end product_unknown]-->
+<!--[if product_flaky]-->
+      {{FLAKY}} of them passed only on a second attempt. The pipeline reruns a
+      failed test once, and both attempts are kept here and in the report, so a
+      flake stays visible instead of disappearing into a green total.
+<!--[end product_flaky]-->
     </p>
 <!--[if framework]-->
 <!--[if framework_clean]-->
