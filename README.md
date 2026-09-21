@@ -38,7 +38,7 @@ down here and each decision is traceable to the test that implements it.
 
 ## Coverage
 
-| Layer | Cases | Focus |
+| Group | Cases | Focus |
 | --- | --- | --- |
 | API | 11 | Pagination, schema, search, price filtering, error codes |
 | UI | 19 | Catalog rendering, sorting, search, cart arithmetic, form validation |
