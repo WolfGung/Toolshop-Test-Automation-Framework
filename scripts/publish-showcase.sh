@@ -21,7 +21,25 @@ ALLURE_VERSION="2.30.0"
 # not by inspection.
 rm -rf "$SITE" published publish-tree
 git worktree prune
-git branch -D gh-pages-new >/dev/null 2>&1 || true
+# A leftover gh-pages-new is only ever ours to delete when its tip commit is
+# one we made: same bot identity, same "Publish showcase for ..." subject
+# (both hard-coded a few lines below, at the `git commit` this branch comes
+# from). Anything else with that name — someone's own work-in-progress branch
+# — is not this script's to destroy; stop and say so instead.
+if git show-ref --verify --quiet refs/heads/gh-pages-new; then
+  branch_author="$(git log -1 --format='%ae' gh-pages-new)"
+  branch_subject="$(git log -1 --format='%s' gh-pages-new)"
+  if [ "$branch_author" = "41898282+github-actions[bot]@users.noreply.github.com" ] \
+     && [[ "$branch_subject" == "Publish showcase for "* ]]; then
+    git branch -D gh-pages-new
+  else
+    echo "publish: a local branch 'gh-pages-new' already exists and its last" >&2
+    echo "commit is not this script's own (author: ${branch_author:-none}," >&2
+    echo "subject: ${branch_subject:-none}). Refusing to delete it — move it" >&2
+    echo "out of the way or remove it yourself, then rerun this script." >&2
+    exit 1
+  fi
+fi
 # Fetching the previous publication is allowed to fail quietly: the very
 # first publication has no gh-pages history yet, and that must degrade to a
 # report with no trend, not to a broken run. Copying it once we already have
