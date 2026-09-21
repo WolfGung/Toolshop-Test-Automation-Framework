@@ -31,25 +31,80 @@ ASSETS_DIR = Path(__file__).parent / "assets"
 
 
 @dataclass
-class RunSummary:
+class Tally:
+    """What happened to one group of results."""
+
     total: int = 0
     passed: int = 0
     failed: int = 0
     skipped: int = 0
     unknown: int = 0
     smoke: int = 0
+
+    @property
+    def not_passed(self) -> int:
+        """Everything that did not come back green, however it got there."""
+        return self.total - self.passed
+
+    def record(self, status: str, smoke: bool, where: str) -> None:
+        self.total += 1
+        if smoke:
+            self.smoke += 1
+        if status == "passed":
+            self.passed += 1
+        elif status in {"failed", "broken"}:
+            self.failed += 1
+        elif status == "skipped":
+            self.skipped += 1
+        elif status == "unknown":
+            self.unknown += 1
+        else:
+            # Every counted result has to land in a bucket the page can show.
+            # Silently dropping one produces a page whose own totals do not add
+            # up, which is the single thing this page cannot afford.
+            raise ValueError(f"unrecognised Allure status {status!r} in {where}")
+
+
+@dataclass
+class RunSummary:
+    """One run, split by what each result is actually evidence of.
+
+    The application and the suite's own tooling are counted apart, because the
+    page leads with the first. A reader looking at a project about testing a
+    storefront reads the big number as coverage of that storefront, and tests of
+    this builder would inflate it on work that is not product coverage at all.
+    """
+
+    product: Tally = field(default_factory=Tally)
+    framework: Tally = field(default_factory=Tally)
     by_layer: dict[str, int] = field(default_factory=dict)
     finished: datetime = datetime.fromtimestamp(0, tz=timezone.utc)
 
+    # The whole run, for anything that needs it. Derived, so the parts and the
+    # whole cannot drift apart.
     @property
-    def product(self) -> int:
-        """Cases that test the application: everything carrying a layer tag."""
-        return sum(self.by_layer.values())
+    def total(self) -> int:
+        return self.product.total + self.framework.total
 
     @property
-    def framework(self) -> int:
-        """The rest: tests of the suite's own configuration."""
-        return self.total - self.product
+    def passed(self) -> int:
+        return self.product.passed + self.framework.passed
+
+    @property
+    def failed(self) -> int:
+        return self.product.failed + self.framework.failed
+
+    @property
+    def skipped(self) -> int:
+        return self.product.skipped + self.framework.skipped
+
+    @property
+    def unknown(self) -> int:
+        return self.product.unknown + self.framework.unknown
+
+    @property
+    def smoke(self) -> int:
+        return self.product.smoke + self.framework.smoke
 
 
 def summarise(results_dir: Path) -> RunSummary:
@@ -61,27 +116,8 @@ def summarise(results_dir: Path) -> RunSummary:
     stops: list[int] = []
     for path in files:
         body = json.loads(path.read_text(encoding="utf-8"))
-        summary.total += 1
-        status = body.get("status", "unknown")
-        if status == "passed":
-            summary.passed += 1
-        elif status in {"failed", "broken"}:
-            summary.failed += 1
-        elif status == "skipped":
-            summary.skipped += 1
-        elif status == "unknown":
-            summary.unknown += 1
-        else:
-            # Every counted result has to land in a bucket the page can show.
-            # Silently dropping one produces a page whose own totals do not add
-            # up, which is the single thing this page cannot afford.
-            raise ValueError(
-                f"unrecognised Allure status {status!r} in {path.name}"
-            )
-
         tags = {l["value"] for l in body.get("labels", []) if l.get("name") == "tag"}
-        if "smoke" in tags:
-            summary.smoke += 1
+
         layers = [layer for layer in LAYERS if layer in tags]
         if len(layers) > 1:
             # A case proves its thing at one layer; two markers means the
@@ -94,6 +130,12 @@ def summarise(results_dir: Path) -> RunSummary:
             )
         for layer in layers:
             summary.by_layer[layer] += 1
+
+        group = summary.product if layers else summary.framework
+        group.record(
+            body.get("status", "unknown"), "smoke" in tags, where=path.name
+        )
+
         if body.get("stop"):
             stops.append(int(body["stop"]))
 
@@ -192,8 +234,10 @@ def build_site(
             Path(assets_dir) / "ci-pipeline.svg", out_dir / "assets" / "ci-pipeline.svg"
         ),
         "run": bool(safe_run_url),
-        "skipped": summary.skipped > 0,
-        "unknown": summary.unknown > 0,
+        "product_skipped": summary.product.skipped > 0,
+        "product_unknown": summary.product.unknown > 0,
+        "framework": summary.framework.total > 0,
+        "framework_clean": summary.framework.not_passed == 0,
     }
 
     page = (Path(__file__).parent / "template.html").read_text(encoding="utf-8")
@@ -201,22 +245,25 @@ def build_site(
         page = _resolve(page, name, keep)
     page = _resolve(page, "diagrams", present["architecture"] or present["pipeline"])
 
+    # The figures the page leads with are the product suite's; the framework's
+    # are named separately, below them, in the template.
     # Everything below is escaped on its way into the page. The counts cannot
     # carry markup and the revision comes from git, but a build tool for a
     # client-facing page should not hold a working injection primitive at all.
     # ``_safe_url`` has already escaped the run URL for its attribute.
     for key, value in {
-        "{{TOTAL}}": _text(summary.total),
-        "{{PASSED}}": _text(summary.passed),
-        "{{FAILED}}": _text(summary.failed),
-        "{{SKIPPED}}": _text(summary.skipped),
-        "{{UNKNOWN}}": _text(summary.unknown),
-        "{{SMOKE}}": _text(summary.smoke),
+        "{{TOTAL}}": _text(summary.product.total),
+        "{{PASSED}}": _text(summary.product.passed),
+        "{{FAILED}}": _text(summary.product.failed),
+        "{{SKIPPED}}": _text(summary.product.skipped),
+        "{{UNKNOWN}}": _text(summary.product.unknown),
+        "{{SMOKE}}": _text(summary.product.smoke),
         "{{API}}": _text(summary.by_layer.get("api", 0)),
         "{{UI}}": _text(summary.by_layer.get("ui", 0)),
         "{{E2E}}": _text(summary.by_layer.get("e2e", 0)),
-        "{{PRODUCT}}": _text(summary.product),
-        "{{FRAMEWORK}}": _text(summary.framework),
+        "{{FRAMEWORK}}": _text(summary.framework.total),
+        "{{FRAMEWORK_OPEN}}": _text(summary.framework.not_passed),
+        "{{RUN_TOTAL}}": _text(summary.total),
         "{{FINISHED}}": _text(summary.finished.strftime("%d %B %Y, %H:%M UTC")),
         "{{REVISION}}": _text(revision[:7]),
         "{{RUN_URL}}": safe_run_url,

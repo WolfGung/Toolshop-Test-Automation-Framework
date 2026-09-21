@@ -114,6 +114,11 @@
     border: 1px solid var(--line); border-radius: 10px; padding: .75rem;
   }
 
+  .flag {
+    border-left: 3px solid var(--accent);
+    padding-left: .9rem;
+  }
+
   .note {
     color: var(--muted); font-size: .95rem;
     border-left: 3px solid var(--line); padding-left: .9rem;
@@ -139,7 +144,7 @@
     <p class="eyebrow">Test automation · portfolio project</p>
     <h1>Toolshop: a quality cycle, end to end</h1>
     <p class="lede">
-      {{PRODUCT}} automated checks against an e-commerce storefront — API, browser
+      {{TOTAL}} automated checks against an e-commerce storefront — API, browser
       and full purchase flow — driven by a written risk analysis rather than by
       whatever was easy to automate. Every push runs all of them against a copy
       of the application that the pipeline starts itself.
@@ -161,30 +166,47 @@
   <div class="wrap">
     <h2 id="numbers-h">The run this page was built from</h2>
     <ul class="stats">
-      <li><b>{{TOTAL}}</b><span>checks ran</span></li>
+      <li><b>{{TOTAL}}</b><span>checks of the application</span></li>
       <li><b>{{PASSED}}</b><span>passed</span></li>
       <li><b>{{FAILED}}</b><span>failed</span></li>
       <li><b>{{SMOKE}}</b><span>in the smoke set</span></li>
     </ul>
     <p>
-      {{PRODUCT}} of those checks test the application — {{API}} against the REST
-      API, {{UI}} through a browser, {{E2E}} end-to-end through the guest purchase
-      flow. That leaves
-      {{FRAMEWORK}} covering the suite's own plumbing: its configuration, and
-      the build of this page.
-<!--[if skipped]-->
+      They divide into {{API}} against the REST API, {{UI}} through a browser and
+      {{E2E}} end-to-end through the guest purchase flow.
+<!--[if product_skipped]-->
       {{SKIPPED}} of the {{TOTAL}} did not run: the suite skips a check it cannot
       reach rather than reporting a failure the product did not cause.
-<!--[end skipped]-->
-<!--[if unknown]-->
+<!--[end product_skipped]-->
+<!--[if product_unknown]-->
       {{UNKNOWN}} finished with no status the report could read, which is a
       fault in the run rather than a verdict on the application.
-<!--[end unknown]-->
+<!--[end product_unknown]-->
     </p>
+<!--[if framework]-->
+<!--[if framework_clean]-->
+    <p>
+      The same run also exercised {{FRAMEWORK}} checks of the framework itself —
+      its configuration, and the build of this page — and all of them passed.
+      They are counted apart from the figures above because they prove nothing
+      about the storefront; they are counted at all because the tooling that
+      produced this page is tested too.
+    </p>
+<!--[else framework_clean]-->
+    <p class="flag">
+      The same run also exercised {{FRAMEWORK}} checks of the framework itself —
+      its configuration, and the build of this page — and {{FRAMEWORK_OPEN}} of
+      them did not pass. That is a fault in the tooling rather than in the
+      application, and it is stated here because the figures above would
+      otherwise be green over a red run.
+    </p>
+<!--[end framework_clean]-->
+<!--[end framework]-->
     <p class="meta">
-      Finished {{FINISHED}} against revision <code>{{REVISION}}</code>.
-      Every number above is read out of that run's Allure results when this page
-      is generated; none of them is typed in by hand.
+      Finished {{FINISHED}} against revision <code>{{REVISION}}</code>, from a
+      run of {{RUN_TOTAL}} results in all. Every number on this page is read out
+      of that run's Allure results when the page is generated; none of them is
+      typed in by hand.
 <!--[if run]-->
       <a href="{{RUN_URL}}">The pipeline run</a> that produced them is public.
 <!--[end run]-->
