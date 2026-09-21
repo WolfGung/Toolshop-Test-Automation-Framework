@@ -314,11 +314,15 @@
   <div class="wrap">
     <h2 id="decisions-h">Three decisions that keep it maintainable</h2>
 
-    <h3>Locators are the application's own <code>data-test</code> attributes</h3>
+    <h3>Locators are the application's own <code>data-test</code> attributes,
+      wherever it provides one</h3>
     <p>
       They are part of the markup contract rather than of its presentation, so
       rewritten copy or a restyle does not turn into a suite-wide failure that
-      has to be triaged before anyone can tell whether the product broke.
+      has to be triaged before anyone can tell whether the product broke. A few
+      controls carry no such attribute: the checkout's guest tab is one, and it
+      is addressed by its routing fragment, <code>a[href="#guest-tab"]</code>,
+      which is structural for the same reason. Visible copy is never a locator.
     </p>
 
     <h3>There are no fixed sleeps</h3>
