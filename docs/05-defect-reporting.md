@@ -96,12 +96,48 @@ which is ordinary for an async update. No report filed.
 `ProductPage.add_to_cart` already uses for the cart badge, rather than
 returning as soon as the keystroke was accepted.
 
+## Worked example — a wait keyed on a verb the application stopped using
+
+Three search and sorting tests failed together, each one timing out while
+waiting for the product grid. A grid that never arrives is risk 4 in
+[the risk analysis](02-risk-analysis.md) — "catalog renders empty or
+partially", rated High — so this cluster looked the most like a real defect
+of the four found in the same pass.
+
+**Observation.** The catalog rendered perfectly in a headed run. The suite
+still timed out: `HomePage.wait_for_products` waited on a `GET` response
+under `/products`, and no such response ever came.
+
+**Verification.** Drove the storefront with Playwright and logged every
+request the page issued while searching:
+
+```
+QUERY http://localhost:8091/products/search   -> 200
+QUERY http://localhost:8091/products          -> 200
+```
+
+The application had moved the product list off `GET` and onto the HTTP
+`QUERY` method — a method with a body, standardised for exactly this case, a
+read whose parameters are too large or too structured for a URL. The
+response bodies were unchanged.
+
+**Outcome — not a defect.** Nothing about the product is broken; the request
+the suite was waiting for simply no longer exists. Filing this would have
+been a report about our own assumption.
+
+**What it changed instead.** `_is_product_list_response` now recognises the
+response by what it carries, a paginated `data` list under `/products`,
+without asserting the method. The verb is not part of what these browser
+tests prove, so the next change of that kind cannot break them. The endpoint
+still answers `GET` as well, which is how the API suite keeps asking for the
+same page of products and getting it.
+
 ## Note — the other two clusters diagnosed in this pass were also drift, not defects
 
 The guest-checkout and contact-form failures investigated alongside the cart
-race (2026-09-21) had the same shape: the required behaviour was still
-present, reachable through markup or a flow step the page objects had not
-been updated for.
+race and the search timeouts (2026-09-21) had the same shape: the required
+behaviour was still present, reachable through markup or a flow step the page
+objects had not been updated for.
 
 - **Guest checkout.** "Continue as Guest" is now a tab next to "Sign in" (the
   tab that is active by default), so `guest-email` existed in the DOM but was
