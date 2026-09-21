@@ -32,6 +32,11 @@ class Settings:
     #: Milliseconds. The environment is shared and occasionally slow.
     default_timeout: int = int(os.getenv("TIMEOUT_MS", "30000"))
 
+    #: Record browser video. Off by default: it costs disk on every run and is
+    #: only wanted when a run is going to be published.
+    record_video: bool = _flag("RECORD_VIDEO", False)
+    video_dir: str = os.getenv("VIDEO_DIR", "videos")
+
     @property
     def app_ready_timeout(self) -> int:
         """The single-page app has to boot before anything is assertable."""

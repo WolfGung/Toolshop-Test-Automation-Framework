@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 624" width="860" height="624"
+     role="img" aria-labelledby="arch-title arch-desc"
+     font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="arch-title">How the Toolshop suite is put together</title>
+  <desc id="arch-desc">Three bands. Top: the test modules — tests/api with 11 cases, tests/e2e with 2, tests/ui with 19. Middle: the reusable layer — src/toolshop/api with ApiClient, ProductsApi and CatalogApi, and src/toolshop/ui/pages with the five page objects. Bottom: the application under test in Docker — the storefront on port 4200, the REST API on port 8091 and MariaDB behind it. API tests reach the API through the client; UI tests reach the storefront through page objects and Playwright driving Chromium; end-to-end tests use both. A column on the right holds config.py, the data factory and conftest.py, which every layer uses and which writes allure-results and the video.</desc>
+
+  <!-- The figure is referenced through <img>, so it cannot inherit a colour
+       from the host page: it carries its own light plate and dark ink, and
+       reads the same in a light and a dark theme. -->
+  <style>
+    .plate { fill: #ffffff; }
+    .zone  { fill: #f3f2ef; }
+    .box   { fill: #ffffff; stroke: #222a32; stroke-width: 1.6; }
+    .lab   { fill: #47525d; font-size: 12px; font-weight: 600; letter-spacing: .09em;
+         paint-order: stroke; stroke: #f3f2ef; stroke-width: 5px; stroke-linejoin: round; }
+    .h     { fill: #12161b; font-size: 17px; font-weight: 650; }
+    .sub   { fill: #47525d; font-size: 12.5px; }
+    .t     { fill: #12161b; font-size: 15px; font-weight: 650; }
+    .t2    { fill: #12161b; font-size: 13.5px; font-weight: 650; }
+    .b     { fill: #12161b; font-size: 13px; }
+    .m     { fill: #47525d; font-size: 12.5px; }
+    .arrow { stroke: #222a32; stroke-width: 1.8; fill: none; marker-end: url(#head); }
+    .dash  { stroke: #47525d; stroke-width: 1.6; fill: none; stroke-dasharray: 6 4; marker-end: url(#head-m); }
+  </style>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0.5 L9,5 L0,9.5 z" fill="#222a32"/>
+    </marker>
+    <marker id="head-m" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0.5 L9,5 L0,9.5 z" fill="#47525d"/>
+    </marker>
+  </defs>
+
+  <rect class="plate" x="0" y="0" width="860" height="624"/>
+
+  <text class="h"   x="24" y="32">The suite, layer by layer</text>
+  <text class="sub" x="24" y="54">What asserts, what it reuses, and what is under test — and which layer reaches the application by which door.</text>
+
+  <!-- ================= band 1: the tests ================= -->
+  <rect class="zone" x="24" y="78" width="576" height="128" rx="10"/>
+
+  <rect class="box" x="40"  y="112" width="168" height="78" rx="8"/>
+  <text class="t" x="124" y="140" text-anchor="middle">tests/api</text>
+  <text class="b" x="124" y="160" text-anchor="middle">11 cases</text>
+  <text class="m" x="124" y="178" text-anchor="middle">no browser needed</text>
+
+  <rect class="box" x="228" y="112" width="168" height="78" rx="8"/>
+  <text class="t" x="312" y="140" text-anchor="middle">tests/e2e</text>
+  <text class="b" x="312" y="160" text-anchor="middle">2 cases</text>
+  <text class="m" x="312" y="178" text-anchor="middle">browser and API</text>
+
+  <rect class="box" x="416" y="112" width="168" height="78" rx="8"/>
+  <text class="t" x="500" y="140" text-anchor="middle">tests/ui</text>
+  <text class="b" x="500" y="160" text-anchor="middle">19 cases</text>
+  <text class="m" x="500" y="178" text-anchor="middle">catalog · cart · forms</text>
+
+  <!-- ================= band 2: the reusable layer ================= -->
+  <rect class="zone" x="24" y="250" width="576" height="170" rx="10"/>
+
+  <rect class="box" x="40" y="284" width="252" height="120" rx="8"/>
+  <text class="t" x="166" y="312" text-anchor="middle">src/toolshop/api/</text>
+  <text class="b" x="166" y="336" text-anchor="middle">ApiClient</text>
+  <text class="b" x="166" y="356" text-anchor="middle">ProductsApi · CatalogApi</text>
+  <text class="m" x="166" y="380" text-anchor="middle">httpx, straight to the API</text>
+
+  <rect class="box" x="332" y="284" width="252" height="120" rx="8"/>
+  <text class="t" x="458" y="312" text-anchor="middle">src/toolshop/ui/pages/</text>
+  <text class="b" x="458" y="336" text-anchor="middle">HomePage · ProductPage</text>
+  <text class="b" x="458" y="356" text-anchor="middle">CartPage · CheckoutPage</text>
+  <text class="b" x="458" y="376" text-anchor="middle">ContactPage</text>
+
+  <!-- the browser, named on the path it sits on -->
+  <rect class="box" x="414" y="424" width="180" height="32" rx="16"/>
+  <text class="b" x="504" y="445" text-anchor="middle">Playwright → Chromium</text>
+
+  <!-- ================= band 3: the application under test ================= -->
+  <rect class="zone" x="24" y="464" width="576" height="136" rx="10"/>
+
+  <rect class="box" x="40" y="498" width="160" height="86" rx="8"/>
+  <text class="t" x="120" y="528" text-anchor="middle">MariaDB</text>
+  <text class="m" x="120" y="550" text-anchor="middle">seeded before</text>
+  <text class="m" x="120" y="568" text-anchor="middle">every run</text>
+
+  <rect class="box" x="232" y="498" width="160" height="86" rx="8"/>
+  <text class="t" x="312" y="528" text-anchor="middle">REST API</text>
+  <text class="b" x="312" y="550" text-anchor="middle">:8091</text>
+  <text class="m" x="312" y="568" text-anchor="middle">Laravel behind nginx</text>
+
+  <rect class="box" x="424" y="498" width="160" height="86" rx="8"/>
+  <text class="t" x="504" y="528" text-anchor="middle">storefront</text>
+  <text class="b" x="504" y="550" text-anchor="middle">:4200</text>
+  <text class="m" x="504" y="568" text-anchor="middle">Angular</text>
+
+  <text class="m" x="584" y="594" text-anchor="end">Docker, started by CI from pinned images</text>
+
+  <!-- ================= the shared column ================= -->
+  <rect class="zone" x="624" y="78" width="212" height="522" rx="10"/>
+
+  <rect class="box" x="640" y="112" width="180" height="78" rx="8"/>
+  <text class="t2" x="730" y="138" text-anchor="middle">src/toolshop/config.py</text>
+  <text class="m"  x="730" y="160" text-anchor="middle">environment-driven</text>
+  <text class="m"  x="730" y="178" text-anchor="middle">settings</text>
+
+  <rect class="box" x="640" y="206" width="180" height="78" rx="8"/>
+  <text class="t2" x="730" y="232" text-anchor="middle">src/toolshop/data/</text>
+  <text class="t2" x="730" y="250" text-anchor="middle">factories.py</text>
+  <text class="m"  x="730" y="272" text-anchor="middle">per-run test data</text>
+
+  <rect class="box" x="640" y="300" width="180" height="120" rx="8"/>
+  <text class="t2" x="730" y="326" text-anchor="middle">tests/conftest.py</text>
+  <text class="m"  x="730" y="350" text-anchor="middle">fixtures · intercepts</text>
+  <text class="m"  x="730" y="368" text-anchor="middle">writes · attaches the</text>
+  <text class="m"  x="730" y="386" text-anchor="middle">failure artefacts and</text>
+  <text class="m"  x="730" y="404" text-anchor="middle">video to Allure</text>
+
+  <rect class="box" x="640" y="482" width="180" height="98" rx="8"/>
+  <text class="t2" x="730" y="512" text-anchor="middle">allure-results</text>
+  <text class="t2" x="730" y="534" text-anchor="middle">+ videos</text>
+  <text class="m"  x="730" y="558" text-anchor="middle">the run's own evidence</text>
+
+  <!-- ================= what calls what ================= -->
+  <path class="arrow" d="M124,192 L196,278"/>
+  <path class="arrow" d="M296,192 L250,278"/>
+  <path class="arrow" d="M328,192 L392,278"/>
+  <path class="arrow" d="M500,192 L470,278"/>
+
+  <path class="arrow" d="M166,406 L166,440 L312,440 L312,492"/>
+  <path class="arrow" d="M458,406 L490,420"/>
+  <path class="arrow" d="M504,458 L504,492"/>
+
+  <path class="arrow" d="M422,541 L396,541"/>
+  <path class="arrow" d="M230,541 L204,541"/>
+
+  <path class="dash" d="M628,151 L604,151"/>
+  <path class="dash" d="M628,346 L604,346"/>
+  <path class="arrow" d="M730,424 L730,478"/>
+
+  <!-- Painted last, over a knockout of the band's own fill. The drops between
+       bands are routed clear of this row; this keeps the words legible if one
+       of them ever moves back over it. -->
+  <text class="lab" x="40" y="100">TESTS — WHERE THE ASSERTIONS LIVE</text>
+  <text class="lab" x="40" y="272">REUSABLE LAYER</text>
+  <text class="lab" x="40" y="486">THE APPLICATION UNDER TEST</text>
+  <text class="lab" x="640" y="100">SHARED ACROSS LAYERS</text>
+</svg>

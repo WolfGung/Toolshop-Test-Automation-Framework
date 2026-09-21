@@ -4,10 +4,31 @@ from contextlib import contextmanager
 from typing import Iterator
 
 import allure
-from playwright.sync_api import Locator, expect
+from playwright.sync_api import Locator, Response, expect
 
 from toolshop.config import settings
 from toolshop.ui.pages.base_page import BasePage
+
+
+def _is_product_list_response(response: Response) -> bool:
+    """A response that carries a page of products, whatever verb fetched it.
+
+    The storefront currently issues `QUERY /products` and `QUERY
+    /products/search` rather than `GET`. The method is deliberately not
+    asserted here: `QUERY` is what the application uses today, and this is a
+    wait for the grid's data to arrive, not an assertion about the request
+    contract the application is supposed to honour. Matching on the response
+    shape instead (a paginated `data` list) also keeps this from firing on
+    unrelated calls under `/products`, such as a single product's detail
+    fetch, which returns an object rather than a page.
+    """
+    if "/products" not in response.url or not response.ok:
+        return False
+    try:
+        body = response.json()
+    except Exception:
+        return False
+    return isinstance(body, dict) and isinstance(body.get("data"), list)
 
 
 class HomePage(BasePage):
@@ -47,7 +68,7 @@ class HomePage(BasePage):
         """
         before = self.grid_signature()
         with self.page.expect_response(
-            lambda r: "/products" in r.url and r.request.method == "GET" and r.ok,
+            _is_product_list_response,
             timeout=settings.default_timeout,
         ):
             yield

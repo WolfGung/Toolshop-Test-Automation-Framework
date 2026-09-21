@@ -51,12 +51,16 @@ def browser_type_launch_args(browser_type_launch_args: dict) -> dict:
 
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args: dict) -> dict:
-    return {
+    args = {
         **browser_context_args,
         "base_url": settings.base_url,
         "viewport": {"width": 1440, "height": 900},
         "locale": "en-GB",
     }
+    if settings.record_video:
+        args["record_video_dir"] = settings.video_dir
+        args["record_video_size"] = {"width": 1440, "height": 900}
+    return args
 
 
 @pytest.fixture(autouse=True)
@@ -75,39 +79,86 @@ def _page_defaults(request: pytest.FixtureRequest) -> Iterator[None]:
     yield
 
 
+@pytest.fixture(autouse=True)
+def _attach_video(request: pytest.FixtureRequest) -> Iterator[None]:
+    """Keep the checkout recording and discard every other video.
+
+    ``record_video_dir`` is a session-scoped context option, so once it is
+    set every browser test is recorded, not only the one that gets
+    published. Only the ``e2e`` checkout flow is meant to become the
+    showcase video, so this fixture renames that recording to a predictable
+    path and deletes the rest as soon as each test ends, rather than leaving
+    a later step to guess which file is the right one (e.g. by picking the
+    largest).
+
+    The ``page`` fixture is fetched *before* the ``yield``, exactly like
+    ``_page_defaults`` above: that is what keeps it alive across teardown.
+    Fetching it after the ``yield`` instead -- reading ``request.fixturenames``
+    is not enough on its own -- races the ``context``/``page`` fixtures' own
+    teardown in this pytest-playwright version and raises "fixture value for
+    'page' is not available"; this fixture must run, and close the page,
+    before that teardown happens, since Playwright only flushes the video
+    file on close.
+    """
+    if not settings.record_video or "page" not in request.fixturenames:
+        yield
+        return
+    page: Page = request.getfixturevalue("page")
+    yield
+    try:
+        video = page.video
+        if video is None:
+            return
+        page.close()
+        recorded = Path(video.path())
+        if request.node.get_closest_marker("e2e") is None:
+            recorded.unlink(missing_ok=True)
+            return
+        kept = Path(settings.video_dir) / f"guest-checkout-{request.node.name}.webm"
+        recorded.replace(kept)
+        allure.attach.file(
+            str(kept), name="video",
+            attachment_type=allure.attachment_type.WEBM,
+        )
+    except Exception:  # a recording is never worth failing a green test over
+        pass
+
+
 class SubmittedRequests(list):
     """Captured POST bodies, so a test can assert what the app actually sent."""
 
 
 @pytest.fixture
 def mock_contact_api(page: Page) -> Iterator[SubmittedRequests]:
-    """Intercept writes to the demo backend and record them.
+    """Record what the application sent, in both modes.
 
     The backend is a shared instance used by everyone practising against this
     site. A test that only needs to prove the form posts the right payload
-    should not add noise to it, so POSTs are answered locally and captured.
-    Set MOCK_CONTACT_API=false to exercise the real endpoint instead.
+    should not add noise to it, so POSTs are answered locally there and
+    captured. Set MOCK_CONTACT_API=false to exercise the real endpoint
+    instead: the request still reaches the application, and it is still
+    captured, but the fixture only answers on the backend's behalf when the
+    backend is somebody else's.
     """
     captured = SubmittedRequests()
 
-    if not settings.mock_contact_api:
-        yield captured
-        return
+    def _matcher(url: object) -> bool:
+        return settings.api_base_url in str(url)
 
-    def _handler(route) -> None:  # type: ignore[no-untyped-def]
+    def _record(route) -> None:  # type: ignore[no-untyped-def]
         request = route.request
         if request.method != "POST":
             route.fallback()
             return
         captured.append({"url": request.url, "body": request.post_data_json})
-        route.fulfill(status=200, content_type="application/json", body="{}")
+        if settings.mock_contact_api:
+            route.fulfill(status=200, content_type="application/json", body="{}")
+        else:
+            route.continue_()
 
-    def _matcher(url: object) -> bool:
-        return settings.api_base_url in str(url)
-
-    page.route(_matcher, _handler)
+    page.route(_matcher, _record)
     yield captured
-    page.unroute(_matcher, _handler)
+    page.unroute(_matcher, _record)
 
 
 # ------------------------------------------------------------- reporting

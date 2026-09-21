@@ -1,0 +1,57 @@
+# docker-compose.stand.yml
+# A disposable copy of the application under test.
+#
+# Images come from the upstream project (testsmith-io/practice-software-testing)
+# and are pinned by digest: a showcase that goes red because somebody else
+# published a release is a showcase nobody trusts.
+name: toolshop-stand
+
+services:
+  # Not published to the host: nothing outside this compose network talks to
+  # the database directly (the suite talks to the API, and the seeder runs
+  # through `docker compose exec`), and some CI runner images already bind
+  # something to host port 3306.
+  mariadb:
+    image: yobasystems/alpine-mariadb:10.6.11
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: toolshop
+
+  laravel-api:
+    image: testsmith/practice-software-testing-sprint5-api@sha256:881cb7ecd76477994728648c0c16f6e9d2beed0f0217734843a32a7bb92553f0
+    depends_on:
+      - mariadb
+    environment:
+      - "PHP_OPCACHE_VALIDATE_TIMESTAMPS=1"
+      - "DB_PORT=3306"
+      - "DB_HOST=mariadb"
+      - "host=localhost"
+      - "DISABLE_LOGGING=true"
+    volumes:
+      - laravel-app-code:/var/www
+
+  # Upstream's own `web` image is published for linux/arm64 only, so on the
+  # amd64 CI runners this suite targets it would only run under QEMU emulation
+  # (slow, and a --privileged binfmt setup step is too heavy for a portfolio
+  # pipeline). We serve the same application through official multi-arch nginx
+  # instead, configured with upstream's own vhost (see stand/vhost.conf).
+  web:
+    image: nginx@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+    depends_on:
+      - laravel-api
+    volumes:
+      - laravel-app-code:/var/www
+      - ./stand/vhost.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8091:80"
+
+  angular-ui:
+    image: testsmith/practice-software-testing-sprint5-ui@sha256:f907d8daae32dc90ba900e964928d00bf0aabfab7067eaeeaa49f5a0f70c52e6
+    ports:
+      - "4200:4200"
+    command: bash -c "ng serve --host 0.0.0.0 --port 4200"
+
+volumes:
+  laravel-app-code:

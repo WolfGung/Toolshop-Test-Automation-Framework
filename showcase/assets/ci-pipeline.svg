@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 704" width="860" height="704"
+     role="img" aria-labelledby="ci-title ci-desc"
+     font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title id="ci-title">What CI does with every change</title>
+  <desc id="ci-desc">Three lanes. Top: on every push to main and every pull request, the pipeline starts the stand from four pinned images and seeds it — ready in 51 seconds — runs every layer with writes enabled and video recording on in 19 seconds, and collects allure-results, the videos and, on failure, the stand's logs. Middle: on main only, the same run restores the Allure history from the gh-pages branch, generates the report, builds this page from the run's own results and publishes to gh-pages, which GitHub Pages serves. Bottom: nightly at 06:00 UTC and on demand, the API suite runs against the public site and a probe checks whether the storefront answers HTTP 200; if it does, the browser suite runs, and if it does not, the run is skipped with a notice rather than failed.</desc>
+
+  <!-- The figure is referenced through <img>, so it cannot inherit a colour
+       from the host page: it carries its own light plate and dark ink, and
+       reads the same in a light and a dark theme. -->
+  <style>
+    .plate { fill: #ffffff; }
+    .zone  { fill: #f3f2ef; }
+    .box   { fill: #ffffff; stroke: #222a32; stroke-width: 1.6; }
+    .gate  { fill: #ffffff; stroke: #222a32; stroke-width: 1.6; }
+    .lab   { fill: #47525d; font-size: 12px; font-weight: 600; letter-spacing: .09em; }
+    .h     { fill: #12161b; font-size: 17px; font-weight: 650; }
+    .sub   { fill: #47525d; font-size: 12.5px; }
+    .t2    { fill: #12161b; font-size: 13.5px; font-weight: 650; }
+    .b     { fill: #12161b; font-size: 13px; }
+    .m     { fill: #47525d; font-size: 12.5px; }
+    .on-line { fill: #47525d; font-size: 12.5px;
+               paint-order: stroke; stroke: #ffffff; stroke-width: 6px; stroke-linejoin: round; }
+    .arrow { stroke: #222a32; stroke-width: 1.8; fill: none; marker-end: url(#head); }
+    .dash  { stroke: #47525d; stroke-width: 1.6; fill: none; stroke-dasharray: 6 4; marker-end: url(#head-m); }
+  </style>
+  <defs>
+    <marker id="head" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0.5 L9,5 L0,9.5 z" fill="#222a32"/>
+    </marker>
+    <marker id="head-m" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0.5 L9,5 L0,9.5 z" fill="#47525d"/>
+    </marker>
+  </defs>
+
+  <rect class="plate" x="0" y="0" width="860" height="704"/>
+
+  <text class="h"   x="24" y="32">What CI does with every change</text>
+  <text class="sub" x="24" y="54">One workflow: a gate on a stand the run starts itself, a publish step on main, and a nightly watch on the public site.</text>
+
+  <!-- ================= lane 1: the gate ================= -->
+  <rect class="zone" x="24" y="74" width="812" height="158" rx="10"/>
+  <text class="lab" x="40" y="96">ON EVERY PUSH TO MAIN AND EVERY PULL REQUEST</text>
+
+  <rect class="box" x="40" y="110" width="180" height="106" rx="8"/>
+  <text class="t2" x="130" y="136" text-anchor="middle">push to main</text>
+  <text class="m"  x="130" y="158" text-anchor="middle">or a pull request</text>
+
+  <rect class="box" x="240" y="110" width="180" height="106" rx="8"/>
+  <text class="t2" x="330" y="136" text-anchor="middle">start the stand</text>
+  <text class="m"  x="330" y="158" text-anchor="middle">four pinned images,</text>
+  <text class="m"  x="330" y="176" text-anchor="middle">database seeded</text>
+  <text class="b"  x="330" y="198" text-anchor="middle">ready in 51 s</text>
+
+  <rect class="box" x="440" y="110" width="180" height="106" rx="8"/>
+  <text class="t2" x="530" y="136" text-anchor="middle">run every layer</text>
+  <text class="m"  x="530" y="158" text-anchor="middle">API · UI · E2E, writes</text>
+  <text class="m"  x="530" y="176" text-anchor="middle">enabled, video on</text>
+  <text class="b"  x="530" y="198" text-anchor="middle">19 s</text>
+
+  <rect class="box" x="640" y="110" width="180" height="106" rx="8"/>
+  <text class="t2" x="730" y="136" text-anchor="middle">collect the evidence</text>
+  <text class="m"  x="730" y="158" text-anchor="middle">allure-results · videos</text>
+  <text class="m"  x="730" y="176" text-anchor="middle">stand logs if it failed</text>
+
+  <path class="arrow" d="M220,163 L238,163"/>
+  <path class="arrow" d="M420,163 L438,163"/>
+  <path class="arrow" d="M620,163 L638,163"/>
+
+  <!-- ================= lane 2: the same run publishes itself ================= -->
+  <rect class="zone" x="24" y="258" width="812" height="158" rx="10"/>
+  <text class="lab" x="40" y="280">ON MAIN ONLY</text>
+
+  <rect class="box" x="40" y="294" width="180" height="106" rx="8"/>
+  <text class="t2" x="130" y="320" text-anchor="middle">restore the history</text>
+  <text class="m"  x="130" y="342" text-anchor="middle">from the gh-pages</text>
+  <text class="m"  x="130" y="360" text-anchor="middle">branch, so trends live</text>
+
+  <rect class="box" x="240" y="294" width="180" height="106" rx="8"/>
+  <text class="t2" x="330" y="320" text-anchor="middle">generate the report</text>
+  <text class="m"  x="330" y="342" text-anchor="middle">Allure, over this run</text>
+  <text class="m"  x="330" y="360" text-anchor="middle">and the ones before</text>
+
+  <rect class="box" x="440" y="294" width="180" height="106" rx="8"/>
+  <text class="t2" x="530" y="320" text-anchor="middle">build this page</text>
+  <text class="m"  x="530" y="342" text-anchor="middle">showcase/build.py, from</text>
+  <text class="m"  x="530" y="360" text-anchor="middle">the run's own results</text>
+
+  <rect class="box" x="640" y="294" width="180" height="106" rx="8"/>
+  <text class="t2" x="730" y="320" text-anchor="middle">publish to gh-pages</text>
+  <text class="m"  x="730" y="342" text-anchor="middle">GitHub Pages serves</text>
+  <text class="m"  x="730" y="360" text-anchor="middle">the page and the report</text>
+
+  <path class="arrow" d="M220,347 L238,347"/>
+  <path class="arrow" d="M420,347 L438,347"/>
+  <path class="arrow" d="M620,347 L638,347"/>
+
+  <!-- the gate's artefacts are what the publish step consumes -->
+  <path class="arrow" d="M730,218 L730,252 L180,252 L180,290"/>
+  <text class="on-line" x="430" y="245" text-anchor="middle">on main, the same run's artefacts</text>
+
+  <!-- ================= lane 3: the watch on the public site ================= -->
+  <rect class="zone" x="24" y="442" width="812" height="238" rx="10"/>
+  <text class="lab" x="40" y="464">NIGHTLY AT 06:00 UTC AND ON DEMAND — THE PUBLIC SITE</text>
+
+  <rect class="box" x="40" y="528" width="180" height="78" rx="8"/>
+  <text class="t2" x="130" y="556" text-anchor="middle">nightly 06:00 UTC</text>
+  <text class="m"  x="130" y="578" text-anchor="middle">or a manual run</text>
+
+  <rect class="box" x="240" y="478" width="200" height="78" rx="8"/>
+  <text class="t2" x="340" y="506" text-anchor="middle">API suite</text>
+  <text class="m"  x="340" y="528" text-anchor="middle">pytest -m api against</text>
+  <text class="m"  x="340" y="546" text-anchor="middle">the public site</text>
+
+  <rect class="box" x="240" y="578" width="200" height="78" rx="8"/>
+  <text class="t2" x="340" y="606" text-anchor="middle">probe the storefront</text>
+  <text class="m"  x="340" y="628" text-anchor="middle">practicesoftwaretesting.com</text>
+  <text class="m"  x="340" y="646" text-anchor="middle">curl, 30 s timeout</text>
+
+  <path class="gate" d="M530,579 L600,617 L530,655 L460,617 z"/>
+  <text class="b" x="530" y="622" text-anchor="middle">HTTP 200?</text>
+
+  <rect class="box" x="640" y="478" width="180" height="78" rx="8"/>
+  <text class="t2" x="730" y="506" text-anchor="middle">browser suite</text>
+  <text class="m"  x="730" y="528" text-anchor="middle">pytest -m "ui or e2e"</text>
+  <text class="m"  x="730" y="546" text-anchor="middle">21 cases</text>
+
+  <rect class="box" x="640" y="578" width="180" height="78" rx="8"/>
+  <text class="t2" x="730" y="606" text-anchor="middle">skipped, not failed</text>
+  <text class="m"  x="730" y="628" text-anchor="middle">the host blocks</text>
+  <text class="m"  x="730" y="646" text-anchor="middle">data-centre IPs</text>
+
+  <path class="arrow" d="M220,567 L230,567 L230,517 L238,517"/>
+  <path class="arrow" d="M220,567 L230,567 L230,617 L238,617"/>
+  <path class="arrow" d="M440,617 L458,617"/>
+  <path class="arrow" d="M530,579 L530,536 L638,536"/>
+  <text class="m" x="540" y="566">yes</text>
+  <path class="arrow" d="M600,617 L638,617"/>
+  <text class="m" x="619" y="610" text-anchor="middle">no</text>
+  <path class="dash" d="M440,505 L638,505"/>
+  <text class="m" x="539" y="497" text-anchor="middle">needs</text>
+</svg>
