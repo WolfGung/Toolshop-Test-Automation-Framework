@@ -45,7 +45,7 @@ down here and each decision is traceable to the test that implements it.
 | API | 11 | Pagination, schema, search, price filtering, error codes |
 | UI | 19 | Catalog rendering, sorting, search, cart arithmetic, form validation |
 | E2E | 2 | Guest checkout through to payment selection |
-| Smoke (of the cases above) | 10 | The critical risks from the risk analysis, run on every deploy |
+| Smoke (of the cases above) | 9 | Every risk rated high or critical, run on every deploy |
 
 The suite also carries checks of its own tooling — configuration, and the
 build of the showcase page. The [live report](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/) counts

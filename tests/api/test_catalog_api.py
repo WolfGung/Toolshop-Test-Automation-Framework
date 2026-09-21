@@ -9,7 +9,6 @@ from toolshop.api.products import CatalogApi
 pytestmark = [pytest.mark.api, allure.feature("Catalog API")]
 
 
-@pytest.mark.smoke
 @allure.title("Brands are returned with a unique slug each")
 def test_brands(catalog_api: CatalogApi) -> None:
     response = catalog_api.brands()

@@ -272,15 +272,15 @@
     <p>
       The suite starts from a ranked list of what costs the business money if it
       breaks, scored by impact and by how likely the feature is to break: eleven
-      risks, each one traceable to the test that covers it. Two are rated
-      critical — a wrong total at checkout, and add-to-cart failing silently —
-      and the smoke set takes the two ranked immediately below them as well: a
-      guest unable to finish an order, and a catalog that renders empty. Those
-      two are rated high rather than critical because they are judged less likely
-      to break, not because they would hurt less — and a deploy is exactly the
-      moment that judgement stops holding.
-      Together they are the {{SMOKE}} checks in the smoke set, and if one of them
-      fails, running the rest is a waste of the pipeline's time.
+      risks, each one traceable to the test that covers it. Six of them are rated
+      high or critical: a wrong total at checkout, add-to-cart failing silently,
+      a guest who cannot finish an order, a catalog that renders empty, search
+      that answers with nothing useful, and a contact form that accepts invalid
+      data or drops valid data. Those six are what the {{SMOKE}} smoke checks
+      cover, each at the layer where the failure shows soonest, and if one of
+      them fails, running the rest wastes the pipeline's time. The five risks
+      below them are scored medium or low and stay out, because a smoke set that
+      covers everything gates nothing.
     </p>
     <p>
       A check then belongs at the lowest layer that can still prove the thing

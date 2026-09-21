@@ -20,8 +20,15 @@ what gets automated first and what runs on every deploy.
 
 ## What the scoring changes
 
-- Risks 1–4 make up the `smoke` set: if any of them fails, nothing else is
-  worth running.
+- The `smoke` set is every risk rated High or Critical, and nothing else:
+  risks 1 to 6, each covered at the layer that shows the failure soonest —
+  the cart and the guest flow for 1 and 2, the guest flow again for 3, the
+  catalogue in a browser and the first page of products over the API for 4,
+  search at both layers for 5, and the contact form's two validation paths
+  for 6. If one of them fails, running the rest wastes the pipeline's time.
+- Risks 7 to 11 are Medium or Low and stay out of that set. A smoke set that
+  covers everything gates nothing, and the full suite runs on every push in
+  any case.
 - Risks 7–10 are cheap to cover at the API level, so they are tested there
   rather than through the browser — faster, and they fail with a clearer
   cause.
