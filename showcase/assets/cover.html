@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Toolshop Test Automation — cover</title>
+<!--
+  Source of `guru-cover-image.png`, exported by scripts/make-assets.py at
+  exactly 1536x1024 — the size the profile expects.
+
+  The wording lives here as text, so changing a headline is changing a line of
+  markup rather than opening an image editor. Every number below is the number
+  pytest collects: 11 API + 19 UI + 2 end-to-end = 32 checks of the
+  application. Nothing is drawn that a run cannot back up.
+
+  No network is used: the type is a locally installed stack and every glyph is
+  inline SVG drawn by hand, so the export is reproducible offline.
+-->
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* Lato when the machine has it, plain system faces otherwise. Both render
+     the same layout; only the letterforms differ. */
+  :root {
+    --face: "Lato", system-ui, -apple-system, "Segoe UI", Roboto,
+            "Noto Sans", "DejaVu Sans", sans-serif;
+    --ink: #ffffff;
+    --muted: #9dbbdd;
+    --teal: #2ee6c5;
+    --cyan: #22d3ee;
+    --line: rgba(120, 180, 255, 0.28);
+    --card: rgba(255, 255, 255, 0.045);
+  }
+
+  body {
+    width: 1536px;
+    height: 1024px;
+    overflow: hidden;
+    position: relative;
+    font-family: var(--face);
+    color: var(--ink);
+    background: #061229;
+  }
+
+  /* The field: a navy gradient with a blue glow bleeding in from the right,
+     over a faint grid that gives the flat colour some depth. */
+  .field, .grid, .glow { position: absolute; inset: 0; }
+  .field { background: linear-gradient(115deg, #061229 0%, #071a35 52%, #0b2247 100%); }
+  .grid {
+    background:
+      repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px 96px),
+      repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 96px);
+    opacity: 0.20;
+    mask-image: linear-gradient(100deg, transparent 18%, #000 78%);
+  }
+  .glow {
+    background:
+      radial-gradient(760px 760px at 108% 46%, rgba(46, 142, 255, 0.62) 0%,
+                      rgba(40, 120, 240, 0.20) 44%, transparent 70%),
+      radial-gradient(520px 420px at 86% 92%, rgba(46, 230, 197, 0.10) 0%, transparent 70%);
+  }
+
+  .sheet {
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 64px;
+    padding: 76px 72px;
+  }
+
+  /* ---- left: who this project is ---- */
+  .say { width: 700px; flex: none; }
+
+  h1 {
+    font-size: 96px;
+    font-weight: 900;
+    line-height: 1.02;
+    letter-spacing: -0.028em;
+    /* Readable when the profile shrinks the cover to a thumbnail: at 320px
+       wide this is still around 20px tall. */
+  }
+  h1 .second { display: block; }
+
+  .claim {
+    margin-top: 26px;
+    font-size: 31px;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.005em;
+    max-width: 620px;
+    background: linear-gradient(92deg, var(--teal), var(--cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .chips {
+    margin-top: 44px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    max-width: 660px;
+  }
+  .chip {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 11px 22px 12px;
+    font-size: 23px;
+    font-weight: 600;
+    color: #dcebff;
+    background: rgba(9, 28, 58, 0.55);
+  }
+
+  .aut {
+    margin-top: 40px;
+    font-size: 19px;
+    line-height: 1.5;
+    color: var(--muted);
+    max-width: 600px;
+  }
+  .aut b { color: #cfe3fb; font-weight: 700; }
+
+  /* ---- right: the three layers, and the run behind them ---- */
+  .stack { flex: 1; display: flex; flex-direction: column; gap: 22px; }
+
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    padding: 26px 30px;
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    background: var(--card);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .mark {
+    flex: none;
+    width: 78px;
+    height: 78px;
+    border: 1px solid rgba(120, 180, 255, 0.34);
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    background: rgba(12, 36, 72, 0.6);
+    color: var(--teal);
+  }
+  .card:nth-child(2) .mark { color: #6cc4ff; }
+  .card:nth-child(3) .mark { color: var(--cyan); }
+  .mark svg { width: 42px; height: 42px; display: block; }
+
+  .what { flex: 1; }
+  .what .layer {
+    display: block;
+    font-size: 34px;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+  }
+  .what .note { display: block; margin-top: 6px; font-size: 21px; color: var(--muted); }
+
+  .count { flex: none; text-align: right; min-width: 104px; }
+  .count .n {
+    display: block;
+    font-size: 52px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: #eaf4ff;
+  }
+  .count .u {
+    display: block;
+    margin-top: 4px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #7fa7d1;
+  }
+
+  .passed {
+    align-self: flex-end;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 30px 18px 24px;
+    border: 1px solid rgba(46, 230, 197, 0.55);
+    border-radius: 22px;
+    background: rgba(9, 48, 44, 0.45);
+  }
+  .passed svg { width: 44px; height: 44px; color: var(--teal); flex: none; }
+  .passed .n { display: block; font-size: 44px; font-weight: 900; line-height: 1; letter-spacing: -0.02em; }
+  .passed .t { font-size: 21px; font-weight: 700; color: #a9f3e4; margin-top: 3px; }
+</style>
+</head>
+<body>
+  <div class="field"></div>
+  <div class="grid"></div>
+  <div class="glow"></div>
+
+  <div class="sheet">
+    <div class="say">
+      <h1>Toolshop<span class="second">Test Automation</span></h1>
+      <p class="claim">Every push runs all of it against a storefront the pipeline starts itself</p>
+
+      <div class="chips">
+        <span class="chip">Python</span>
+        <span class="chip">pytest</span>
+        <span class="chip">Playwright</span>
+        <span class="chip">httpx</span>
+        <span class="chip">Allure</span>
+        <span class="chip">Docker</span>
+        <span class="chip">GitHub Actions</span>
+      </div>
+
+      <p class="aut">Under test: <b>practicesoftwaretesting.com</b>, run locally from the
+        upstream project&rsquo;s own published images.</p>
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <span class="mark" aria-hidden="true">
+          <!-- request out, response back: an exchange over HTTP -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 8.5h14"/><path d="M13.5 5l3.5 3.5-3.5 3.5"/>
+            <path d="M21 15.5H7"/><path d="M10.5 12L7 15.5l3.5 3.5"/>
+          </svg>
+        </span>
+        <span class="what">
+          <span class="layer">API</span>
+          <span class="note">The REST API, asked directly</span>
+        </span>
+        <span class="count"><span class="n">11</span><span class="u">checks</span></span>
+      </div>
+
+      <div class="card">
+        <span class="mark" aria-hidden="true">
+          <!-- a browser window: the same product, through its interface -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2.75" y="4.25" width="18.5" height="15.5" rx="2.5"/>
+            <path d="M2.75 9.25h18.5"/>
+            <circle cx="6" cy="6.75" r="0.75" fill="currentColor" stroke="none"/>
+            <circle cx="8.75" cy="6.75" r="0.75" fill="currentColor" stroke="none"/>
+            <circle cx="11.5" cy="6.75" r="0.75" fill="currentColor" stroke="none"/>
+            <path d="M6 13h7"/><path d="M6 16.25h11"/>
+          </svg>
+        </span>
+        <span class="what">
+          <span class="layer">UI</span>
+          <span class="note">Driven through a real browser</span>
+        </span>
+        <span class="count"><span class="n">19</span><span class="u">checks</span></span>
+      </div>
+
+      <div class="card">
+        <span class="mark" aria-hidden="true">
+          <!-- a journey across steps: browse, buy, confirm -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="4.5" cy="12" r="2.25"/>
+            <circle cx="12" cy="12" r="2.25"/>
+            <circle cx="19.5" cy="12" r="2.25"/>
+            <path d="M6.75 12h3"/><path d="M14.25 12h3"/>
+          </svg>
+        </span>
+        <span class="what">
+          <span class="layer">End-to-end</span>
+          <span class="note">Guest purchase, front to back</span>
+        </span>
+        <span class="count"><span class="n">2</span><span class="u">flows</span></span>
+      </div>
+
+      <div class="passed">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9.25"/><path d="M7.75 12.4l3 3 5.5-6.2"/>
+        </svg>
+        <span>
+          <span class="n">32 tests passed</span>
+          <span class="t">10 of them in the smoke set</span>
+        </span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
