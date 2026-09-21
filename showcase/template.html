@@ -276,9 +276,10 @@
       high or critical: a wrong total at checkout, add-to-cart failing silently,
       a guest who cannot finish an order, a catalog that renders empty, search
       that answers with nothing useful, and a contact form that accepts invalid
-      data or drops valid data. Those six are what the {{SMOKE}} smoke checks
-      cover, each at the layer where the failure shows soonest, and if one of
-      them fails, running the rest wastes the pipeline's time. The five risks
+      data or drops valid data. The smoke set is those six and nothing else:
+      {{SMOKE}} checks, each at the layer where the failure shows soonest. If
+      one of them fails, running the rest wastes the pipeline's time. The five
+      risks
       below them are scored medium or low and stay out, because a smoke set that
       covers everything gates nothing.
     </p>
