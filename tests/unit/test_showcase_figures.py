@@ -1,4 +1,9 @@
-"""The case counts drawn on the diagrams are the counts pytest collects."""
+"""Every count a showcase asset states is a count pytest collects.
+
+That covers the two diagrams on the page and the profile cover, which quotes
+the same numbers where nobody would notice them going stale: the cover is an
+exported image, so a client sees the number long after the suite moved on.
+"""
 from __future__ import annotations
 
 import os
@@ -9,6 +14,7 @@ import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from functools import lru_cache
+from html.parser import HTMLParser
 from pathlib import Path
 
 import pytest
@@ -17,20 +23,139 @@ ROOT = Path(__file__).resolve().parents[2]
 ASSETS = ROOT / "showcase" / "assets"
 SVG = "{http://www.w3.org/2000/svg}"
 FIGURES = ("architecture.svg", "ci-pipeline.svg")
+COVER = "cover.html"
+SOURCES = (*FIGURES, COVER)
 
 #: "11 cases", and "1 case" if a figure ever has to say it.
 DRAWN_COUNT = re.compile(r"^(\d+) cases?$")
 
-# Every case count drawn on a figure, with the selection it claims to describe.
-# ``-m ""`` is what the gate job runs when the architecture figure says "run
-# every layer"; the nightly browser job runs ``-m "ui or e2e"`` itself. Adding a
-# count to a figure without adding it here fails the last test in this module.
+#: A count the cover states with the words that qualify it: "32 tests passed".
+#: A card's number stands alone, so the words are empty and the card's layer
+#: name labels it instead.
+STATED_COUNT = re.compile(r"^(\d+)\s*(.*)$")
+
+#: What the reader of the cover pays attention to: the boxes that hold a number,
+#: and the pieces inside them. `.layer` names a card, `.n` is a number, `.t` is
+#: the badge's second line, which states a number of its own.
+COVER_REGIONS = frozenset({"card", "passed"})
+COVER_PARTS = frozenset({"layer", "n", "t"})
+
+#: HTML elements that never have an end tag, so they never go on the stack.
+VOID = frozenset(
+    "area base br col embed hr img input link meta param source track wbr".split()
+)
+
+#: What to do when a count no longer matches, per kind of source.
+FIX = {
+    ".svg": (
+        "The figure is hand-drawn SVG: edit the number in showcase/assets/{source}, "
+        "and check the coverage table in README.md, which quotes the same counts."
+    ),
+    ".html": (
+        "Edit the number in showcase/assets/{source} and export the cover again "
+        "(python -m http.server -d site 8899 & PYTHONPATH=. python "
+        "scripts/make-assets.py), because the committed PNG still shows the old "
+        "one. README.md quotes the same counts."
+    ),
+}
+
+# Every count a showcase asset states, with the selection it claims to
+# describe. ``-m ""`` is what the gate job runs when the architecture figure
+# says "run every layer"; the nightly browser job runs ``-m "ui or e2e"``
+# itself. The cover counts the product only: its three cards are the three
+# layers, and its badge is those three together plus the smoke set, which is
+# why neither names a total for the whole run. Adding a count to an asset
+# without adding it here fails the last test in this module.
 CLAIMS: dict[tuple[str, str], tuple[str, ...]] = {
     ("architecture.svg", "tests/api"): ("-m", "", "tests/api"),
     ("architecture.svg", "tests/ui"): ("-m", "", "tests/ui"),
     ("architecture.svg", "tests/e2e"): ("-m", "", "tests/e2e"),
     ("ci-pipeline.svg", "browser suite"): ("-m", "ui or e2e"),
+    ("cover.html", "API"): ("-m", "", "tests/api"),
+    ("cover.html", "UI"): ("-m", "", "tests/ui"),
+    ("cover.html", "End-to-end"): ("-m", "", "tests/e2e"),
+    ("cover.html", "N tests passed"): ("-m", "", "tests/api", "tests/ui", "tests/e2e"),
+    ("cover.html", "N of them in the smoke set"): ("-m", "smoke"),
 }
+
+
+class _CoverReader(HTMLParser):
+    """The numbers cover.html states, grouped by the box each sits in.
+
+    Walks the page once, tracking which COVER_REGIONS container (a `.card` or
+    the `.passed` badge) each tag is nested inside. Within a container, the
+    text of any COVER_PARTS span is captured: `.layer` names a card, `.n` is
+    the number itself, `.t` is the badge's second line, which states a number
+    of its own. VOID tags never get a matching end tag, so they are never
+    pushed onto the nesting stack — pushing one would leave the stack one
+    entry too deep for the rest of the document.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._stack: list[dict[str, str] | None] = [None]
+        self.regions: list[dict[str, str]] = []
+        self._capture: tuple[dict[str, str], str] | None = None
+        self._buffer: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        classes = set((dict(attrs).get("class") or "").split())
+        region = self._stack[-1]
+        if classes & COVER_REGIONS:
+            region = {}
+            self.regions.append(region)
+        if tag not in VOID:
+            self._stack.append(region)
+        part = classes & COVER_PARTS
+        if part and region is not None:
+            self._capture = (region, next(iter(part)))
+            self._buffer = []
+
+    def handle_data(self, data: str) -> None:
+        if self._capture is not None:
+            self._buffer.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if self._capture is not None:
+            region, part = self._capture
+            region[part] = "".join(self._buffer).strip()
+            self._capture = None
+        if tag not in VOID and len(self._stack) > 1:
+            self._stack.pop()
+
+
+@lru_cache(maxsize=None)
+def _drawn_cover() -> dict[str, int]:
+    """Every count cover.html states, keyed by the words that describe it.
+
+    A card is titled by its `.layer` span and holds one number, in `.count
+    .n`. The badge below the cards has no title of its own — its two lines
+    each state a number followed by the words that qualify it ("32 tests
+    passed", "10 of them in the smoke set") — so those words become the
+    title, with the number itself replaced by "N".
+    """
+    reader = _CoverReader()
+    reader.feed((ASSETS / COVER).read_text())
+    drawn: dict[str, int] = {}
+    for region in reader.regions:
+        if "layer" in region:
+            match = STATED_COUNT.match(region["n"])
+            assert match, f"{COVER}: {region['layer']!r} card holds {region['n']!r}, not a number"
+            drawn[region["layer"]] = int(match.group(1))
+        else:
+            for part in ("n", "t"):
+                text = region[part]
+                match = STATED_COUNT.match(text)
+                assert match, f"{COVER}: the badge's {part!r} line holds {text!r}, not a number"
+                count, words = match.groups()
+                title = f"N {words}" if words else "N"
+                drawn[title] = int(count)
+    return drawn
+
+
+def _drawn_source(source: str) -> dict[str, int]:
+    """Every count `source` states, dispatched by how the two kinds are written."""
+    return _drawn_cover() if source == COVER else _drawn(source)
 
 
 @lru_cache(maxsize=None)
@@ -100,32 +225,31 @@ def _collected(selection: tuple[str, ...]) -> int:
     return len(ids)
 
 
-@pytest.mark.parametrize(("figure", "box"), list(CLAIMS), ids=lambda v: v)
-def test_a_figure_draws_the_number_of_cases_pytest_collects(figure: str, box: str) -> None:
-    selection = CLAIMS[(figure, box)]
-    drawn = _drawn(figure).get(box)
+@pytest.mark.parametrize(("source", "box"), list(CLAIMS), ids=lambda v: v)
+def test_a_figure_draws_the_number_of_cases_pytest_collects(source: str, box: str) -> None:
+    selection = CLAIMS[(source, box)]
+    drawn = _drawn_source(source).get(box)
     assert drawn is not None, (
-        f"showcase/assets/{figure} no longer draws a case count in a box titled "
+        f"showcase/assets/{source} no longer states a count in a box titled "
         f'"{box}". Either the box was renamed, in which case fix CLAIMS in this '
-        f"file, or the count was dropped from the figure."
+        f"file, or the count was dropped."
     )
     collected = _collected(selection)
     assert drawn == collected, (
-        f'showcase/assets/{figure} draws "{drawn} cases" in the "{box}" box, but '
-        f"pytest collects {collected}: `pytest {shlex.join(selection)}`.\n"
-        f"A test was added, removed or re-marked. The figure is hand-drawn SVG: "
-        f"edit the number in showcase/assets/{figure}, and check the coverage "
-        f"table in README.md, which quotes the same counts."
+        f'showcase/assets/{source} states {drawn} for "{box}", but pytest '
+        f"collects {collected}: `pytest {shlex.join(selection)}`.\n"
+        f"A test was added, removed or re-marked. "
+        + FIX[Path(source).suffix].format(source=source)
     )
 
 
 def test_every_case_count_on_the_figures_is_checked() -> None:
     """Without this, a loose reading of the files would pass by finding nothing."""
-    drawn = {(figure, box) for figure in FIGURES for box in _drawn(figure)}
+    drawn = {(source, box) for source in SOURCES for box in _drawn_source(source)}
     assert drawn == set(CLAIMS), (
         "the case counts found in showcase/assets do not match the ones this "
         f"test checks.\n  found:   {sorted(drawn)}\n  checked: {sorted(CLAIMS)}\n"
-        "A count added to a figure needs a line in CLAIMS naming the pytest "
-        "selection it describes; if nothing was found at all, the figures or the "
+        "A count added to a source needs a line in CLAIMS naming the pytest "
+        "selection it describes; if nothing was found at all, the sources or the "
         "way this test reads them have changed."
     )
