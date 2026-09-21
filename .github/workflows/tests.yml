@@ -52,6 +52,25 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     permissions:
       contents: write
+    # Two pushes to main close together start two independent stand+showcase
+    # pairs; without this, whichever showcase happens to finish its own work
+    # last wins the force-push, regardless of which commit is newer. This
+    # group makes publications serialise instead of race: only one showcase
+    # job runs at a time, so there is no window where two of them are both
+    # mid-build and racing on the same `git push --force`.
+    # cancel-in-progress is deliberately false: a cancelled publication can
+    # be interrupted mid-script, and while the assemble-then-single-push
+    # shape means that can never leave gh-pages itself half-written, it
+    # would still waste the run and delay the next one for nothing — a
+    # delayed publication is a strictly better outcome than a cancelled one.
+    # This does not guarantee the newest commit always publishes last (if an
+    # older commit's `stand` job happens to run much slower, its showcase
+    # can still become ready, queue, and run after a newer commit's already
+    # finished); it only guarantees publications never overlap, which is
+    # what makes the outcome deterministic instead of a timing race.
+    concurrency:
+      group: showcase-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
         with:

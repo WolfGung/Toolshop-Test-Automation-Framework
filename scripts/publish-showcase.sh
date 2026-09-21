@@ -13,14 +13,38 @@ ALLURE_VERSION="2.30.0"
 # A prior run that died mid-way (a killed job, a crashed shell) can leave a
 # worktree registered without a directory, or a directory without the
 # registration; either half-state must not stop this run from starting clean.
+# A prior *successful* local run leaves something too: `git checkout
+# --orphan gh-pages-new` creates a local branch that removing the worktree
+# does not delete, so a second local run collides on the branch name with
+# "fatal: a branch named 'gh-pages-new' already exists" — found by actually
+# running this script twice in a row while verifying the history fix below,
+# not by inspection.
 rm -rf "$SITE" published publish-tree
 git worktree prune
+git branch -D gh-pages-new >/dev/null 2>&1 || true
+# Fetching the previous publication is allowed to fail quietly: the very
+# first publication has no gh-pages history yet, and that must degrade to a
+# report with no trend, not to a broken run. Copying it once we already have
+# it in hand is a different posture: at that point the source is right there
+# in the worktree, so a failure means something is actually wrong (a
+# permissions problem, a corrupted history directory) and the run should
+# stop rather than silently publish a trendless report while claiming
+# otherwise.
 git fetch origin gh-pages --depth 1 || true
 if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
   git worktree add published origin/gh-pages
   if [ -d published/report/history ]; then
-    echo "publish: carrying over Allure history"
+    # `cp -r src dst` copies INTO dst when dst already exists, nesting the
+    # history at history/history/*.json instead of replacing it — Allure
+    # then sees no history at the path it expects, and the report loses its
+    # trend even though this step reported success. `$RESULTS/history`
+    # already exists whenever a person reruns this script locally against a
+    # results directory left over from a previous run (exactly what the
+    # brief's own Step 3 asks for), so the destination is cleared first to
+    # make the copy a replace, not a merge.
+    rm -rf "$RESULTS/history"
     cp -r published/report/history "$RESULTS/history"
+    echo "publish: carried over Allure history from the previous publication"
   fi
 fi
 
@@ -69,6 +93,21 @@ git add -A
 git -c user.name="github-actions[bot]" \
     -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
     commit -m "Publish showcase for ${GITHUB_SHA:-local}"
+# Plain --force, not --force-with-lease, and on purpose. gh-pages is a
+# publication, not a history: every single run is meant to replace it
+# completely, including a rerun of the very same commit, so there is no
+# "someone else's work I might clobber" case here for a lease to protect —
+# that is what the workflow's `concurrency` group (see tests.yml) is for,
+# by making sure only one publish is ever running at a time. A lease would
+# also tie this push's success to the early, best-effort
+# `git fetch origin gh-pages` above, which is deliberately allowed to fail
+# quietly (a first publication has no previous gh-pages to fetch). A bare
+# `--force-with-lease` uses that same fetch as its expected value, so a
+# transient network blip on the read side — something this script already
+# shrugs off — would turn into a hard failure on the write side instead: a
+# legitimate publication rejected for a reason that has nothing to do with
+# a race. That trade is worse than the race it would guard against once
+# concurrency already serialises publications.
 git push --force origin gh-pages-new:gh-pages
 cd ..
 git worktree remove --force publish-tree
