@@ -144,10 +144,10 @@
     <p class="eyebrow">Test automation · portfolio project</p>
     <h1>Toolshop: a quality cycle, end to end</h1>
     <p class="lede">
-      {{TOTAL}} automated checks against an e-commerce storefront — API, browser
-      and full purchase flow — driven by a written risk analysis rather than by
-      whatever was easy to automate. Every push runs all of them against a copy
-      of the application that the pipeline starts itself.
+      {{TOTAL}} automated checks against an e-commerce storefront, covering the
+      REST API, the browser and the full purchase flow, driven by a written risk
+      analysis rather than by whatever was easy to automate. Every push runs all
+      of them against a copy of the application that the pipeline starts itself.
     </p>
     <p class="stack">Python · pytest · Playwright · httpx · Allure · Docker · GitHub Actions</p>
     <nav class="links" aria-label="Project">
@@ -176,11 +176,11 @@
       {{E2E}} end-to-end through the guest purchase flow.
 <!--[if product_skipped]-->
       {{SKIPPED}} of the {{TOTAL}} did not run: the suite skips a check it cannot
-      reach rather than reporting a failure the product did not cause.
+      reach instead of reporting a failure the product did not cause.
 <!--[end product_skipped]-->
 <!--[if product_unknown]-->
       {{UNKNOWN}} finished with no status the report could read, which is a
-      fault in the run rather than a verdict on the application.
+      fault in the run, not a verdict on the application.
 <!--[end product_unknown]-->
 <!--[if product_flaky]-->
       {{FLAKY}} of them passed only on a second attempt. The pipeline reruns a
@@ -191,19 +191,19 @@
 <!--[if framework]-->
 <!--[if framework_clean]-->
     <p>
-      The same run also exercised {{FRAMEWORK}} checks of the framework itself —
-      its configuration, and the build of this page — and all of them passed.
-      They are counted apart from the figures above because they prove nothing
-      about the storefront; they are counted at all because the tooling that
-      produced this page is tested too.
+      The same run also exercised {{FRAMEWORK}} checks of the framework itself:
+      its configuration, and the build of this page. All of them passed. They
+      are counted apart from the figures above because they prove nothing about
+      the storefront; they are counted at all because the tooling that produced
+      this page is tested too.
     </p>
 <!--[else framework_clean]-->
     <p class="flag">
-      The same run also exercised {{FRAMEWORK}} checks of the framework itself —
-      its configuration, and the build of this page — and {{FRAMEWORK_OPEN}} of
-      them did not pass. That is a fault in the tooling rather than in the
-      application, and it is stated here because the figures above would
-      otherwise be green over a red run.
+      The same run also exercised {{FRAMEWORK}} checks of the framework itself:
+      its configuration, and the build of this page. {{FRAMEWORK_OPEN}} of them
+      did not pass, which is a fault in the tooling and not in the application.
+      It is stated here because the figures above would otherwise be green over
+      a red run.
     </p>
 <!--[end framework_clean]-->
 <!--[end framework]-->
@@ -235,7 +235,7 @@
     <p class="note">
       The checkout recording is produced by the browser during a published CI
       run. This copy of the page was generated without one, so there is nothing
-      to play here rather than an empty frame.
+      to play here instead of an empty frame.
     </p>
 <!--[end video]-->
   </div>
@@ -247,13 +247,13 @@
 <!--[if diagrams]-->
 <!--[if architecture]-->
     <figure>
-      <img src="assets/architecture.svg" alt="Three bands beside a shared column: the test modules tests/api, tests/e2e and tests/ui with their case counts; the code they reuse, src/toolshop/api and the page objects in src/toolshop/ui/pages; and the application under test in Docker — the storefront on port 4200, the REST API on port 8091 and MariaDB behind it. The API tests reach the API through the client, the browser tests reach the storefront through Playwright driving Chromium and the end-to-end tests use both; the column on the right holds what every layer shares — config.py, the data factory in data/factories.py and the fixtures in tests/conftest.py — and the evidence those fixtures leave behind, allure-results and the video.">
+      <img src="assets/architecture.svg" alt="Three bands beside a shared column: the test modules tests/api, tests/e2e and tests/ui with their case counts; the code they reuse, src/toolshop/api and the page objects in src/toolshop/ui/pages; and the application under test in Docker: the storefront on port 4200, the REST API on port 8091 and MariaDB behind it. The API tests reach the API through the client, the browser tests reach the storefront through Playwright driving Chromium and the end-to-end tests use both; the column on the right holds what every layer shares, config.py, the data factory in data/factories.py and the fixtures in tests/conftest.py, together with the evidence those fixtures leave behind, allure-results and the video.">
       <figcaption>Tests hold the assertions; everything reusable sits below them, so a change in the application lands in one file.</figcaption>
     </figure>
 <!--[end architecture]-->
 <!--[if pipeline]-->
     <figure>
-      <img src="assets/ci-pipeline.svg" alt="Three lanes. On every push to main and every pull request: start the stand from four pinned images and seed it, run every layer with writes enabled and video recording on, and collect allure-results and the videos — and on main those same artefacts go on to restore the Allure history from the gh-pages branch, generate the report, build this page and publish to gh-pages, which GitHub Pages serves. A third lane runs nightly and on demand against the public site: the API suite always, the browser suite only if a probe answers HTTP 200, and otherwise a skip carrying its reason rather than a failure.">
+      <img src="assets/ci-pipeline.svg" alt="Three lanes. On every push to main and every pull request: start the stand from four pinned images and seed it, run every layer with writes enabled and video recording on, and collect allure-results and the videos; on main those same artefacts go on to restore the Allure history from the gh-pages branch, generate the report, build this page and publish to gh-pages, which GitHub Pages serves. A third lane runs nightly and on demand against the public site: the API suite always, the browser suite only if a probe answers HTTP 200, and otherwise a skip carrying its reason, not a failure.">
       <figcaption>The same pipeline that gates a push also publishes this page, so what you are reading came out of a run that had to pass first.</figcaption>
     </figure>
 <!--[end pipeline]-->
@@ -288,7 +288,7 @@
       data rules, so they are asserted against the REST API, where a failure
       names its own cause and needs no browser: {{API}} cases. Only behaviour a
       person can actually see is driven through one, which is the {{UI}} browser
-      cases — rendering, sorting, search, cart arithmetic, form validation. The
+      cases: rendering, sorting, search, cart arithmetic, form validation. The
       {{E2E}} end-to-end cases exist because the guest purchase path is the one
       flow whose whole value is that the separate parts hold together.
     </p>
@@ -307,6 +307,15 @@
           going further would assert a fixture, not the product.</li>
       </ul>
     </div>
+    <p class="meta">
+      The reasoning itself is written down and kept in the repository:
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/01-scope-and-requirements.md">scope and requirements</a>,
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/02-risk-analysis.md">the risk analysis</a>,
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/03-test-strategy.md">the test strategy</a>,
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/04-test-design-contact-form.md">a worked test design</a>,
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/05-defect-reporting.md">defect reporting</a>
+      and <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/06-environments-and-ci.md">environments and CI</a>.
+    </p>
   </div>
 </section>
 
@@ -330,7 +339,7 @@
       Sorting, searching and filtering refetch the product grid. The suite waits
       for that response and then for the grid to actually re-render, comparing a
       fingerprint of the rendered names. Waiting on the response alone still
-      races the render — that race is what a <code>sleep(2)</code> hides on a
+      races the render, and that race is what a <code>sleep(2)</code> hides on a
       fast machine and fails on a slow one.
     </p>
 
@@ -338,7 +347,7 @@
     <p>
       The public demo site is shared with everyone else practising against it, so
       there writes are intercepted in the browser and the payload is asserted
-      instead of being sent — which also catches the bug class where a field is
+      instead of being sent, which also catches the bug class where a field is
       renamed or dropped on its way out. Against the stand the pipeline starts
       from images pinned by digest, the same tests run with writes enabled and
       the order-placing case included. One suite, two contracts about what it is

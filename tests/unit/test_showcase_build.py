@@ -261,14 +261,14 @@ def test_a_failing_framework_test_is_stated_on_the_page(
     prose = _prose(_page(results_with_plumbing, tmp_path))
     assert "2 checks of the framework itself" in prose
     assert "1 of them did not pass" in prose
-    assert "all of them passed" not in prose
+    assert "All of them passed" not in prose
 
 
 def test_a_clean_framework_run_is_stated_as_such(results: Path, tmp_path: Path) -> None:
     _result(results, "u1", "passed", "tests.unit.test_config", [])
     prose = _prose(_page(results, tmp_path))
     assert "1 checks of the framework itself" in prose
-    assert "all of them passed" in prose
+    assert "All of them passed" in prose
 
 
 def test_a_run_of_nothing_but_product_tests_says_nothing_about_plumbing(
