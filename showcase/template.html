@@ -242,13 +242,13 @@
 <!--[if diagrams]-->
 <!--[if architecture]-->
     <figure>
-      <img src="assets/architecture.svg" alt="Three bands. Top: test modules for API, UI and end-to-end. Middle: the reusable layer — the HTTP client and product resources, page objects, the data factory and configuration. Bottom: the application under test — storefront, REST API and database. Arrows show API tests calling the API directly, UI tests reaching the storefront through page objects, and end-to-end tests crossing both.">
+      <img src="assets/architecture.svg" alt="Three bands beside a shared column: the test modules tests/api, tests/e2e and tests/ui with their case counts; the code they reuse, src/toolshop/api and the page objects in src/toolshop/ui/pages; and the application under test in Docker — the storefront on port 4200, the REST API on port 8091 and MariaDB behind it. The API tests reach the API through the client, the browser tests reach the storefront through Playwright driving Chromium and the end-to-end tests use both; the column on the right holds what every layer shares — config.py, the data factory in data/factories.py and the fixtures in tests/conftest.py — and the evidence those fixtures leave behind, allure-results and the video.">
       <figcaption>Tests hold the assertions; everything reusable sits below them, so a change in the application lands in one file.</figcaption>
     </figure>
 <!--[end architecture]-->
 <!--[if pipeline]-->
     <figure>
-      <img src="assets/ci-pipeline.svg" alt="Pipeline from a push: bring up the stand from four pinned images, seed it, run the API, UI and end-to-end tests with writes enabled, collect Allure results and the video, generate the report with history, build this page and publish it. A separate nightly lane runs against the public site behind a reachability gate.">
+      <img src="assets/ci-pipeline.svg" alt="Three lanes. On every push to main and every pull request: start the stand from four pinned images and seed it, ready in 51 seconds, run every layer with writes enabled and video recording on in 19 seconds, and collect allure-results and the videos — and on main those same artefacts go on to restore the Allure history from the gh-pages branch, generate the report, build this page and publish to gh-pages, which GitHub Pages serves. A third lane runs nightly and on demand against the public site: the API suite always, the browser suite only if a probe answers HTTP 200, and otherwise a skip carrying its reason rather than a failure.">
       <figcaption>The same pipeline that gates a push also publishes this page, so what you are reading came out of a run that had to pass first.</figcaption>
     </figure>
 <!--[end pipeline]-->
