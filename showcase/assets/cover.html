@@ -74,10 +74,12 @@
     flex: none;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    /* Stretched by .sheet to the full padded height and spread top to
-       bottom, so the same four lines that used to sit as a centred island
-       now use the whole field instead of leaving a band above and below. */
+    /* Stretched by .sheet to the full padded height. The headline, the claim
+       and the chips sit packed together at their own margins below, and only
+       .aut's auto top margin absorbs the leftover height, pushing it to the
+       bottom — one deliberate gap instead of `justify-content: space-between`
+       smearing that same leftover space across all three, which read as dead
+       air between the claim and the chips. */
   }
 
   h1 {
@@ -123,7 +125,7 @@
   }
 
   .aut {
-    margin-top: 56px;
+    margin-top: auto;
     font-size: 19px;
     line-height: 1.5;
     color: var(--muted);
