@@ -7,6 +7,7 @@ reproducing it locally.
 from __future__ import annotations
 
 import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Iterator
@@ -193,6 +194,13 @@ def pytest_runtest_makereport(item, call):  # type: ignore[no-untyped-def]
                       attachment_type=allure.attachment_type.TEXT)
 
 
+#: Failure categories, kept beside the suite and read by Allure out of the
+#: results directory. `allure generate` has no flag for it: a copy has to be
+#: in the results themselves, or the report comes out with an empty
+#: Categories tab while the README promises failures grouped by cause.
+CATEGORIES = Path(__file__).resolve().parents[1] / "allure" / "categories.json"
+
+
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Record the environment the run happened in, for the report's panel.
 
@@ -233,3 +241,11 @@ def pytest_sessionstart(session: pytest.Session) -> None:
         ),
         encoding="utf-8",
     )
+    if not CATEGORIES.is_file():
+        raise RuntimeError(
+            f"{CATEGORIES} is missing, so this run's report would group no "
+            f"failures at all — which is the opposite of what the README and "
+            f"the showcase page say it does. Restore the file, or stop "
+            f"claiming the grouping."
+        )
+    shutil.copyfile(CATEGORIES, results / "categories.json")
