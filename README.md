@@ -232,3 +232,14 @@ Two things follow from this, and both are deliberate:
   of `app-root`, rather than with "element not found" on whichever locator the
   test happened to use first. That is how the 403 was identified in the first
   place.
+
+## Related work
+
+Two more repositories from the same portfolio:
+
+- **[Marketplace-Test-Automation-Framework](https://github.com/WolfGung/Marketplace-Test-Automation-Framework)** — API and browser tests for a marketplace demo shop, with a smoke set, video and traces per browser test and a published Allure report with a trend.
+- **[Web-Scraping-Automation-Framework](https://github.com/WolfGung/Web-Scraping-Automation-Framework)** — a scraper that collects two practice sites over HTTP and through a browser, detects changes between nightly runs and publishes the data, the change report and the test report.
+
+## Hire me
+
+I take short, well-defined jobs: a test automation framework from scratch, an API test suite for an existing backend, end-to-end tests for a critical flow, fixing flaky tests and reducing run time, setting up CI for existing tests, scrapers and data pipelines. Profile on Guru: [https://www.guru.com/freelancers/pavel-zhukov-atum](https://www.guru.com/freelancers/pavel-zhukov-atum). Time zone UTC+2; I work in writing.
