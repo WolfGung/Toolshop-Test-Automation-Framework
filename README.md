@@ -1,8 +1,42 @@
 # Toolshop — Quality Engineering Project
 
+A test automation framework built from scratch for an online shop: API and
+browser tests that run in CI on every push, against the live storefront or a
+disposable copy of it started in Docker.
+
 [![tests](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml/badge.svg)](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml)
 [![live report](https://img.shields.io/badge/live%20report-Allure-brightgreen)](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/)
+[![python](https://img.shields.io/badge/python-3.11%2B-blue)](requirements.txt)
 [![license: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+
+What is shown here is the full cycle from requirements to a suite that runs in
+CI: what is worth covering and what is deliberately left out, written down
+before the first test, then 32 automated cases across the API, the browser and
+an end-to-end checkout flow. The API test suite needs no browser and finishes
+in seconds; the end-to-end tests take a guest from the catalog through to
+payment selection. Every run publishes an Allure report, and a failing test
+arrives with the screenshot, the page and the console output needed to judge
+it.
+
+## Coverage
+
+| Group | Cases | Focus |
+| --- | --- | --- |
+| API | 11 | Pagination, schema, search, price filtering, error codes |
+| UI | 19 | Catalog rendering, sorting, search, cart arithmetic, form validation |
+| E2E | 2 | Guest checkout through to payment selection |
+| Smoke (of the cases above) | 9 | Every risk rated high or critical, run on every deploy |
+
+The suite also carries checks of its own tooling — configuration, and the
+build of the showcase page. The [live report](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/) counts
+those apart from the coverage above, because they prove nothing about the
+storefront.
+
+**Application under test:** [practicesoftwaretesting.com](https://practicesoftwaretesting.com)
+— a public demo storefront with a REST API, published as a practice target for
+test automation. No employer code, data or systems are involved.
+
+## Evidence
 
 **Start with the evidence:** [the live Allure report](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/) of the
 latest run on `main`, and [the checkout test as it runs](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/#recording) —
@@ -11,15 +45,6 @@ both published by [the pipeline that had to pass first](https://wolfgung.github.
 [![The Allure report of a full run against the stand: every case green, with the environment it ran in](allure-report-screenshot.png)](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/)
 
 ![How the suite is put together: the test modules, the reusable layer beneath them, and the application under test running in Docker](showcase/assets/architecture.svg)
-
-A complete quality cycle for a web application, from reading an undocumented
-product to a maintained automated suite: scope and requirement gaps, a
-risk-ranked strategy, test design, and 32 automated cases across API, UI and
-end-to-end layers.
-
-**Application under test:** [practicesoftwaretesting.com](https://practicesoftwaretesting.com)
-— a public demo storefront with a REST API, published as a practice target for
-test automation. No employer code, data or systems are involved.
 
 ## Why this repository exists
 
@@ -36,20 +61,6 @@ down here and each decision is traceable to the test that implements it.
 | [Test design](docs/04-test-design-contact-form.md) | A worked example: equivalence classes and boundaries for one feature |
 | [Defect reporting](docs/05-defect-reporting.md) | The template, plus a finding that was verified and closed rather than filed |
 | [Environments and CI](docs/06-environments-and-ci.md) | Why the suite runs against two environments, what each is allowed to do, and how to read a skipped nightly run |
-
-## Coverage
-
-| Group | Cases | Focus |
-| --- | --- | --- |
-| API | 11 | Pagination, schema, search, price filtering, error codes |
-| UI | 19 | Catalog rendering, sorting, search, cart arithmetic, form validation |
-| E2E | 2 | Guest checkout through to payment selection |
-| Smoke (of the cases above) | 9 | Every risk rated high or critical, run on every deploy |
-
-The suite also carries checks of its own tooling — configuration, and the
-build of the showcase page. The [live report](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/) counts
-those apart from the coverage above, because they prove nothing about the
-storefront.
 
 ## Stack
 
