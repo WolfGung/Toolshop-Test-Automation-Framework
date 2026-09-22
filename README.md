@@ -2,6 +2,7 @@
 
 [![tests](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml/badge.svg)](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml)
 [![live report](https://img.shields.io/badge/live%20report-Allure-brightgreen)](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/)
+[![license: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
 **Start with the evidence:** [the live Allure report](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/) of the
 latest run on `main`, and [the checkout test as it runs](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/#recording) —
