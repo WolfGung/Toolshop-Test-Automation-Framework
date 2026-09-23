@@ -51,6 +51,12 @@ class ContactPage(BasePage):
         selector = ", ".join(f'[data-test="{test_id}"]' for test_id in _ERROR_TEST_IDS)
         return self.page.locator(selector)
 
+    def error(self, field: str) -> Locator:
+        """The validation banner of one field: ``first-name``, ``email``, ``message``…"""
+        test_id = f"{field}-error"
+        assert test_id in _ERROR_TEST_IDS, f"no validation banner for {field!r}"
+        return self.by_test(test_id)
+
     @property
     def error_texts(self) -> list[str]:
         return [t.strip() for t in self.errors.all_inner_texts()]

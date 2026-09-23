@@ -32,8 +32,10 @@ def test_empty_form_reports_all_required_fields(page: Page) -> None:
 
     contact.submit()
 
-    expect(contact.errors.first).to_be_visible()
-    assert contact.error_texts == REQUIRED_FIELD_ERRORS
+    # The banners render one per field, not all in one paint: on a slow
+    # storefront a read taken as soon as the first one shows sees one or two.
+    # `to_have_text` on the list keeps looking until every banner is there.
+    expect(contact.errors).to_have_text(REQUIRED_FIELD_ERRORS)
 
 
 @pytest.mark.negative
@@ -51,8 +53,7 @@ def test_invalid_email_is_rejected(page: Page, invalid_email: str) -> None:
     contact.fill(ContactMessage(email=invalid_email))
     contact.submit()
 
-    expect(contact.errors.first).to_be_visible()
-    assert any("Email" in text for text in contact.error_texts), contact.error_texts
+    expect(contact.error("email")).to_contain_text("Email")
 
 
 @pytest.mark.negative
@@ -66,8 +67,7 @@ def test_message_just_below_minimum(page: Page) -> None:
     contact.fill(ContactMessage(message="x" * (MIN_MESSAGE_LENGTH - 1)))
     contact.submit()
 
-    expect(contact.errors.first).to_be_visible()
-    assert MIN_LENGTH_ERROR in contact.error_texts, contact.error_texts
+    expect(contact.error("message")).to_have_text(MIN_LENGTH_ERROR)
 
 
 @pytest.mark.boundary
