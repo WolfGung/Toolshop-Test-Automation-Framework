@@ -8,10 +8,8 @@ into a lie. The picture of a CI run is that idea pointed at GitHub: it is
 photographed from the public run page, and only once the API and the page
 itself both say the run finished green.
 
-The profile banner is not rendered here. It is a profile-level asset, identical
-across the owner's projects, and it is committed as `guru-profile-banner-
-1000x250.png`: a second banner that almost matched the first would look wrong
-beside it in the same profile.
+The profile banner is not part of this repository. It is a profile-level
+asset that lives with the profile, not with any one project.
 
 Usage:
     ~/.local/bin/allure generate allure-results --clean -o site/report
