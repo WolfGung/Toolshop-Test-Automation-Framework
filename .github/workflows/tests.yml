@@ -117,6 +117,8 @@ jobs:
     name: API tests
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    # Runs against the public demo shop, which is not ours: it can fail this job, never the run.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -137,6 +139,8 @@ jobs:
     name: Storefront reachable from this runner
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    # curl fails this step when the shop does not answer at all; that must not fail the run either.
+    continue-on-error: true
     outputs:
       status: ${{ steps.probe.outputs.status }}
     steps:
@@ -157,6 +161,8 @@ jobs:
     if: >-
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
       && needs.reachable.outputs.status == '200'
+    # Runs against the public demo shop, which is not ours: it can fail this job, never the run.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
