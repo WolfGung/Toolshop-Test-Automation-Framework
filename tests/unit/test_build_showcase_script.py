@@ -138,12 +138,30 @@ class Published:
 
     root: Path
     url: str
+    #: Paths whose next request gets a 503, as from a server that is briefly
+    #: unavailable; the request after that is served as usual.
+    failing_once: set[str]
 
     def put(self, name: str, body: str) -> None:
         (self.root / "report" / "history" / f"{name}.json").write_text(body, encoding="utf-8")
 
+    def fail_next(self, name: str) -> None:
+        self.failing_once.add(f"/report/history/{name}.json")
 
-class _Quiet(SimpleHTTPRequestHandler):
+
+class _Site(SimpleHTTPRequestHandler):
+    def __init__(self, *args: object, failing_once: set[str], **kwargs: object) -> None:
+        # Set before the base class runs: it handles the request in __init__.
+        self.failing_once = failing_once
+        super().__init__(*args, **kwargs)  # type: ignore[arg-type]
+
+    def do_GET(self) -> None:
+        if self.path in self.failing_once:
+            self.failing_once.discard(self.path)
+            self.send_error(503)
+            return
+        super().do_GET()
+
     def log_message(self, *args: object) -> None:
         pass
 
@@ -152,11 +170,14 @@ class _Quiet(SimpleHTTPRequestHandler):
 def published(tmp_path: Path) -> Iterator[Published]:
     root = tmp_path / "published"
     (root / "report" / "history").mkdir(parents=True)
-    server = ThreadingHTTPServer(("127.0.0.1", 0), partial(_Quiet, directory=str(root)))
+    failing_once: set[str] = set()
+    server = ThreadingHTTPServer(
+        ("127.0.0.1", 0), partial(_Site, directory=str(root), failing_once=failing_once)
+    )
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield Published(root, f"http://127.0.0.1:{server.server_address[1]}/")
+        yield Published(root, f"http://127.0.0.1:{server.server_address[1]}/", failing_once)
     finally:
         server.shutdown()
         server.server_close()
@@ -307,6 +328,21 @@ def test_a_history_file_that_is_not_json_is_left_out(
     assert build.returncode == 0, _said(build)
     assert _history(work) == {"history.json": '{"uid": "a"}'}
     assert "history-trend.json" in build.stderr
+
+
+def test_a_transient_server_error_does_not_cost_the_trend(
+    work: Path, tools: Path, published: Published
+) -> None:
+    """A file lost to one failed request is lost for good: the next publication
+    can only read back what this one published. So a server error that clears
+    on the next request must not keep the file out."""
+    published.put("history-trend", '[{"published": "history-trend"}]')
+    published.fail_next("history-trend")
+
+    build = _build(work, tools, published.url)
+
+    assert build.returncode == 0, _said(build)
+    assert _history(work) == {"history-trend.json": '[{"published": "history-trend"}]'}
 
 
 def test_a_first_publication_builds_without_a_trend(

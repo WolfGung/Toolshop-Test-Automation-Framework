@@ -38,7 +38,11 @@ trap 'rm -rf "$staging"' EXIT
 carried=0
 for name in history history-trend duration-trend categories-trend retry-trend; do
   url="${SITE_URL%/}/report/history/$name.json"
-  if ! curl --fail --silent --show-error --location --max-time 20 \
+  # A file missed once is missed for good, since the next build can only read
+  # back what this one publishes, so a timeout or a transient HTTP error (408,
+  # 429, 500, 502, 503, 504) is tried twice more. A 404 or a refused connection
+  # is not retried.
+  if ! curl --fail --silent --show-error --location --max-time 20 --retry 2 \
        --output "$staging/$name.json" "$url"; then
     echo "build: could not read $name.json from $url" >&2
     continue

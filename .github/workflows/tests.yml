@@ -139,7 +139,7 @@ jobs:
     name: Storefront reachable from this runner
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    # curl fails this step when the shop does not answer at all; that must not fail the run either.
+    # Probes the public demo shop, which is not ours: this job never fails the run.
     continue-on-error: true
     outputs:
       status: ${{ steps.probe.outputs.status }}
@@ -147,10 +147,12 @@ jobs:
       - id: probe
         name: Probe the storefront
         run: |
-          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://practicesoftwaretesting.com)
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://practicesoftwaretesting.com) || true
           echo "status=$code" >> "$GITHUB_OUTPUT"
           echo "Storefront responded with HTTP $code"
-          if [ "$code" != "200" ]; then
+          if [ "$code" = "000" ]; then
+            echo "::notice title=Browser tests skipped::The hosted storefront did not answer this runner at all: curl reports HTTP 000, meaning no response. The browser suite could not reach the application and did not run, so this says nothing about the product — run the browser tests locally."
+          elif [ "$code" != "200" ]; then
             echo "::notice title=Browser tests skipped::The hosted storefront answered HTTP $code from this runner. It blocks data-centre IP ranges, so the browser suite cannot reach the application. This is an environment limitation, not a product failure — run the browser tests locally."
           fi
 
