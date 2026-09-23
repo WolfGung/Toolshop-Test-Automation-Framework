@@ -32,5 +32,6 @@ stand-down:
 	./scripts/stand-down.sh
 
 stand-test:
+	rm -rf allure-results && \
 	BASE_URL=http://localhost:4200 API_BASE_URL=http://localhost:8091 \
-	rm -rf allure-results && MOCK_CONTACT_API=false TIMEOUT_MS=10000 pytest -m ""
+	MOCK_CONTACT_API=false TIMEOUT_MS=10000 pytest -m ""
