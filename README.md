@@ -1,22 +1,12 @@
 # Toolshop — Quality Engineering Project
 
-A test automation framework built from scratch for an online shop: API and
-browser tests that run in CI on every push, against the live storefront or a
-disposable copy of it started in Docker.
+A test automation framework built from scratch for an online shop:
+32 automated cases across the API, the browser and a checkout flow, run in CI on every push.
 
 [![tests](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml/badge.svg)](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml)
 [![live report](https://img.shields.io/badge/live%20report-Allure-brightgreen)](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/)
 [![python](https://img.shields.io/badge/python-3.11%2B-blue)](requirements.txt)
 [![license: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
-
-What is shown here is the full cycle from requirements to a suite that runs in
-CI: what is worth covering and what is deliberately left out, written down
-before the first test, then 32 automated cases across the API, the browser and
-an end-to-end checkout flow. The API test suite needs no browser and finishes
-in seconds; the end-to-end tests take a guest from the catalog through to
-payment selection. Every run publishes an Allure report, and a failing test
-arrives with the screenshot, the page and the console output needed to judge
-it.
 
 ## Coverage
 
@@ -32,7 +22,15 @@ build of the showcase page. The [live report](https://wolfgung.github.io/Toolsho
 those apart from the coverage above, because they prove nothing about the
 storefront.
 
-**Application under test:** [practicesoftwaretesting.com](https://practicesoftwaretesting.com)
+## What this shows
+
+- **A framework from scratch, planned before it was coded.** Scope, risks and test design are written down first, and each decision leads to the test that implements it.
+- **An API test suite and end-to-end tests for a checkout.** The API suite needs no browser and finishes in seconds. The end-to-end tests take a guest from the catalog to payment.
+- **Failures a developer can act on.** Every run publishes an Allure report, and a failing test brings its screenshot, page and console output.
+
+## Application under test
+
+[practicesoftwaretesting.com](https://practicesoftwaretesting.com)
 — a public demo storefront with a REST API, published as a practice target for
 test automation. No employer code, data or systems are involved.
 
