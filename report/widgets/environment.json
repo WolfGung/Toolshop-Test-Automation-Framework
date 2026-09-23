@@ -1,0 +1,1 @@
+[{"values":["http://localhost:4200"],"name":"BASE_URL"},{"values":["http://localhost:8091"],"name":"API_BASE_URL"},{"values":["True"],"name":"Headless"},{"values":["3.12.14"],"name":"Python"},{"values":["False"],"name":"MockContactApi"},{"values":["true"],"name":"CI"}]

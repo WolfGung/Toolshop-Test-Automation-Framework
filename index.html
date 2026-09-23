@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Toolshop — Quality Engineering Project</title>
+<meta name="description" content="A risk-ranked test strategy and an automated suite across API, UI and end-to-end layers, run on every push against a copy of the application that CI starts itself.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fbfaf8;
+    --panel: #ffffff;
+    --ink: #1b1f24;
+    --muted: #5a6470;
+    --line: #dcdcd8;
+    --accent: #1c5d99;
+    --on-accent: #ffffff;
+    --mark: #f2efe9;
+    /* The diagrams are referenced with <img>, so the currentColor inside them
+       resolves against the SVG itself, not against this page: they are drawn
+       dark whatever the theme. They therefore sit on a plate that stays light
+       in both themes rather than on a panel that turns dark under them. */
+    --plate: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216;
+      --panel: #161b22;
+      --ink: #e6edf3;
+      --muted: #9aa7b4;
+      --line: #2a323c;
+      --accent: #8ab4f8;
+      --on-accent: #0f1216;
+      --mark: #1b2129;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow-wrap: break-word;
+  }
+
+  /* One container width for every section, so headings share a left edge on a
+     wide screen; the reading column is held separately at about 70 characters. */
+  .wrap, .wide { max-width: 900px; margin: 0 auto; padding: 0 16px; }
+  .wrap h1, .wrap h2, .wrap h3, .wrap p, .wrap ul:not(.stats), .wrap .aside,
+  .wide h2, .wide p, figcaption { max-width: 68ch; }
+
+  h1, h2, h3 { line-height: 1.25; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(1.75rem, 1.2rem + 2.4vw, 2.6rem); margin: 0 0 .5rem; }
+  h2 { font-size: clamp(1.25rem, 1.05rem + 1vw, 1.6rem); margin: 0 0 .75rem; }
+  h3 { font-size: 1.05rem; margin: 1.5rem 0 .35rem; }
+  p { margin: 0 0 1rem; }
+  a { color: var(--accent); }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .92em;
+    background: var(--mark);
+    padding: .1em .35em;
+    border-radius: 4px;
+  }
+
+  header.top { padding: 3rem 0 1.5rem; border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    font-size: .8rem; text-transform: uppercase; letter-spacing: .09em;
+    color: var(--muted); margin: 0 0 .75rem;
+  }
+  .lede { font-size: 1.1rem; }
+  .stack { color: var(--muted); font-size: .95rem; }
+
+  .links { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.5rem; }
+  .btn {
+    display: inline-block; padding: .6rem 1rem; border-radius: 8px;
+    border: 1px solid var(--line); text-decoration: none; color: var(--ink);
+    background: var(--panel); font-weight: 600; font-size: .95rem;
+  }
+  .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .btn:hover { border-color: var(--accent); }
+  .btn:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  section { padding: 2.5rem 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: 0; }
+
+  .stats {
+    list-style: none; margin: 0 0 1.25rem; padding: 0;
+    display: grid; gap: .75rem;
+    grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  }
+  .stats li {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: .9rem 1rem;
+  }
+  .stats b {
+    display: block; font-size: 2rem; line-height: 1.1;
+    font-variant-numeric: tabular-nums; font-weight: 650;
+  }
+  .stats span { display: block; color: var(--muted); font-size: .88rem; margin-top: .2rem; }
+  .meta { color: var(--muted); font-size: .95rem; }
+
+  figure { margin: 0 0 1.5rem; }
+  figcaption { color: var(--muted); font-size: .9rem; margin-top: .5rem; }
+  img, video { display: block; max-width: 100%; height: auto; }
+  video {
+    width: 100%; background: var(--mark);
+    border: 1px solid var(--line); border-radius: 10px;
+  }
+  figure img {
+    width: 100%; background: var(--plate);
+    border: 1px solid var(--line); border-radius: 10px; padding: .75rem;
+  }
+
+  .flag {
+    border-left: 3px solid var(--accent);
+    padding-left: .9rem;
+  }
+
+  .note {
+    color: var(--muted); font-size: .95rem;
+    border-left: 3px solid var(--line); padding-left: .9rem;
+  }
+
+  .aside {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 1.25rem 1.25rem .5rem; margin-top: 1.5rem;
+  }
+  .aside h3 { margin-top: 0; }
+  .aside ul { margin: 0 0 1rem; padding-left: 1.1rem; }
+  .aside li { margin-bottom: .5rem; }
+
+  .closing { text-align: left; padding-bottom: 3rem; }
+  footer { color: var(--muted); font-size: .9rem; padding: 2rem 0 3rem; }
+  footer p { margin-bottom: .5rem; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">Test automation · portfolio project</p>
+    <h1>Toolshop: a quality cycle, end to end</h1>
+    <p class="lede">
+      32 automated checks against an e-commerce storefront, covering the
+      REST API, the browser and the full purchase flow, driven by a written risk
+      analysis rather than by whatever was easy to automate. Every push runs all
+      of them against a copy of the application that the pipeline starts itself.
+    </p>
+    <p class="stack">Python · pytest · Playwright · httpx · Allure · Docker · GitHub Actions</p>
+    <nav class="links" aria-label="Project">
+      <a class="btn primary" href="report/">Open the test report</a>
+      <a class="btn" href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework">Read the code</a>
+      <a class="btn" href="#recording">Watch a test run</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section id="numbers" aria-labelledby="numbers-h">
+  <div class="wrap">
+    <h2 id="numbers-h">The run this page was built from</h2>
+    <ul class="stats">
+      <li><b>32</b><span>checks of the application</span></li>
+      <li><b>32</b><span>passed</span></li>
+      <li><b>0</b><span>failed</span></li>
+      <li><b>9</b><span>in the smoke set</span></li>
+    </ul>
+    <p>
+      They divide into 11 against the REST API, 19 through a browser and
+      2 end-to-end through the guest purchase flow.
+
+
+
+    </p>
+    <p>
+      The same run also exercised 72 checks of the framework itself:
+      its configuration, and the build of this page. All of them passed.
+
+      They
+      are counted apart from the figures above because they prove nothing about
+      the storefront; they are counted at all because the tooling that produced
+      this page is tested too.
+    </p>
+    <p class="meta">
+      Finished 23 September 2026, 07:54 UTC against revision <code>055d8bd</code>, from a
+      run of 104 results in all. Every number on this page is read out
+      of that run's Allure results when the page is generated; none of them is
+      typed in by hand.
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/runs/35834077684">The pipeline run</a> that produced them is public.
+    </p>
+  </div>
+</section>
+
+<section id="recording" aria-labelledby="recording-h">
+  <div class="wide">
+    <h2 id="recording-h">A test, as it runs</h2>
+    <p>
+      The guest checkout case, recorded by the browser during the run above:
+      catalog, cart, delivery details, payment method. No narration and no cuts.
+    </p>
+    <video controls preload="metadata" src="media/checkout.webm" width="1440" height="900">
+      Your browser cannot play this recording. It is a WebM file at
+      <a href="media/checkout.webm">media/checkout.webm</a>.
+    </video>
+  </div>
+</section>
+
+<section id="structure" aria-labelledby="structure-h">
+  <div class="wide">
+    <h2 id="structure-h">How it is put together</h2>
+    <figure>
+      <img src="assets/architecture.svg" alt="Three bands beside a shared column: the test modules tests/api, tests/e2e and tests/ui with their case counts; the code they reuse, src/toolshop/api and the page objects in src/toolshop/ui/pages; and the application under test in Docker: the storefront on port 4200, the REST API on port 8091 and MariaDB behind it. The API tests reach the API through the client, the browser tests reach the storefront through Playwright driving Chromium and the end-to-end tests use both; the column on the right holds what every layer shares, config.py, the data factory in data/factories.py and the fixtures in tests/conftest.py, together with the evidence those fixtures leave behind, allure-results and the video.">
+      <figcaption>Tests hold the assertions; everything reusable sits below them, so a change in the application lands in one file.</figcaption>
+    </figure>
+    <figure>
+      <img src="assets/ci-pipeline.svg" alt="Three lanes. On every push to main and every pull request: start the stand from four pinned images and seed it, run every layer with writes enabled and video recording on, and collect allure-results and the videos; on main those same artefacts go on to restore the Allure history from the gh-pages branch, generate the report, build this page and publish to gh-pages, which GitHub Pages serves. A third lane runs nightly and on demand against the public site: the API suite always, the browser suite only if a probe answers HTTP 200, and otherwise a skip carrying its reason, not a failure.">
+      <figcaption>The same pipeline that gates a push also publishes this page, so what you are reading came out of a run that had to pass first.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="coverage" aria-labelledby="coverage-h">
+  <div class="wrap">
+    <h2 id="coverage-h">How the coverage was chosen</h2>
+    <p>
+      The suite starts from a ranked list of what costs the business money if it
+      breaks, scored by impact and by how likely the feature is to break: eleven
+      risks, each one traceable to the test that covers it. Six of them are rated
+      high or critical: a wrong total at checkout, add-to-cart failing silently,
+      a guest who cannot finish an order, a catalog that renders empty, search
+      that answers with nothing useful, and a contact form that accepts invalid
+      data or drops valid data. The smoke set is those six and nothing else:
+      9 checks, each at the layer where the failure shows soonest. If
+      one of them fails, running the rest wastes the pipeline's time. The five
+      risks
+      below them are scored medium or low and stay out, because a smoke set that
+      covers everything gates nothing.
+    </p>
+    <p>
+      A check then belongs at the lowest layer that can still prove the thing
+      that matters. Pagination, price bounds, response schema and error codes are
+      data rules, so they are asserted against the REST API, where a failure
+      names its own cause and needs no browser: 11 cases. Only behaviour a
+      person can actually see is driven through one, which is the 19 browser
+      cases: rendering, sorting, search, cart arithmetic, form validation. The
+      2 end-to-end cases exist because the guest purchase path is the one
+      flow whose whole value is that the separate parts hold together.
+    </p>
+    <div class="aside">
+      <h3>What this suite deliberately does not cover</h3>
+      <ul>
+        <li><b>Accessibility and performance.</b> Both need their own tooling and
+          their own time budget. A green functional suite says nothing about
+          either, and implying otherwise would be the dishonest part.</li>
+        <li><b>Security.</b> There is one check that user input is not reflected
+          back as markup. That is a sanity check, not an assessment.</li>
+        <li><b>Cross-browser rendering.</b> The suite runs on Firefox and WebKit
+          on request, but rendering differences are not asserted anywhere.</li>
+        <li><b>Payment processing.</b> The end-to-end flow stops at choosing a
+          payment method: the demo application has no processor behind it, so
+          going further would assert a fixture, not the product.</li>
+      </ul>
+    </div>
+    <p class="meta">
+      The reasoning itself is written down and kept in the repository:
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/01-scope-and-requirements.md">scope and requirements</a>,
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/02-risk-analysis.md">the risk analysis</a>,
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/03-test-strategy.md">the test strategy</a>,
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/04-test-design-contact-form.md">a worked test design</a>,
+      <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/05-defect-reporting.md">defect reporting</a>
+      and <a href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework/blob/main/docs/06-environments-and-ci.md">environments and CI</a>.
+    </p>
+  </div>
+</section>
+
+<section id="decisions" aria-labelledby="decisions-h">
+  <div class="wrap">
+    <h2 id="decisions-h">Three decisions that keep it maintainable</h2>
+
+    <h3>Locators are the application's own <code>data-test</code> attributes,
+      wherever it provides one</h3>
+    <p>
+      They are part of the markup contract rather than of its presentation, so
+      rewritten copy or a restyle does not turn into a suite-wide failure that
+      has to be triaged before anyone can tell whether the product broke. A few
+      controls carry no such attribute: the checkout's guest tab is one, and it
+      is addressed by its routing fragment, <code>a[href="#guest-tab"]</code>,
+      which is structural for the same reason. Visible copy is never a locator.
+    </p>
+
+    <h3>There are no fixed sleeps</h3>
+    <p>
+      Sorting, searching and filtering refetch the product grid. The suite waits
+      for that response and then for the grid to actually re-render, comparing a
+      fingerprint of the rendered names. Waiting on the response alone still
+      races the render, and that race is what a <code>sleep(2)</code> hides on a
+      fast machine and fails on a slow one.
+    </p>
+
+    <h3>One suite, two environments with different write permissions</h3>
+    <p>
+      The public demo site is shared with everyone else practising against it, so
+      there writes are intercepted in the browser and the payload is asserted
+      instead of being sent, which also catches the bug class where a field is
+      renamed or dropped on its way out. Against the stand the pipeline starts
+      from images pinned by digest, the same tests run with writes enabled and
+      the order-placing case included. One suite, two contracts about what it is
+      allowed to touch.
+    </p>
+  </div>
+</section>
+
+<section class="closing" aria-labelledby="closing-h">
+  <div class="wrap">
+    <h2 id="closing-h">The full report</h2>
+    <p>
+      Every case, its steps, its duration and the trend across runs. Failures
+      carry a full-page screenshot, the page HTML, the URL and the browser
+      console, and are grouped by cause — product defect, timeout, selector
+      drift, infrastructure — because that is what decides who picks the failure
+      up.
+    </p>
+    <p class="links">
+      <a class="btn primary" href="report/">Open the Allure report</a>
+      <a class="btn" href="https://github.com/WolfGung/Toolshop-Test-Automation-Framework">Repository and documentation</a>
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Application under test: <a href="https://practicesoftwaretesting.com">practicesoftwaretesting.com</a>,
+      a public demo storefront published as a practice target for test
+      automation. The pipeline runs against a local copy of it: upstream's own
+      published storefront and API images, the third-party database image
+      upstream itself runs, and official nginx as the ingress, each pinned by
+      digest. No employer code, data or systems are involved.
+    </p>
+    <p>Built from run <code>055d8bd</code> on 23 September 2026, 07:54 UTC.</p>
+  </div>
+</footer>
+
+</body>
+</html>
