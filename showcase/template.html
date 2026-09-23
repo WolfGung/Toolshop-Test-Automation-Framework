@@ -262,7 +262,7 @@
 <!--[end architecture]-->
 <!--[if pipeline]-->
     <figure>
-      <img src="assets/ci-pipeline.svg" alt="Three lanes. On every push to main and every pull request: start the stand from four pinned images and seed it, run every layer with writes enabled and video recording on, and collect allure-results and the videos; on main those same artefacts go on to restore the Allure history from the gh-pages branch, generate the report, build this page and publish to gh-pages, which GitHub Pages serves. A third lane runs nightly and on demand against the public site: the API suite always, the browser suite only if a probe answers HTTP 200, and otherwise a skip carrying its reason, not a failure.">
+      <img src="assets/ci-pipeline.svg" alt="Three lanes. On every push to main and every pull request: start the stand from four pinned images and seed it, run every layer with writes enabled and video recording on, and collect allure-results and the videos; on main those same artefacts go on to restore the Allure history from the published site, generate the report, build this page and deploy the site to GitHub Pages, which serves it. A third lane runs nightly and on demand against the public site: the API suite always, the browser suite only if a probe answers HTTP 200, and otherwise a skip carrying its reason, not a failure.">
       <figcaption>The same pipeline that gates a push also publishes this page, so what you are reading came out of a run that had to pass first.</figcaption>
     </figure>
 <!--[end pipeline]-->

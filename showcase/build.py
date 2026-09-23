@@ -24,15 +24,15 @@ from urllib.parse import urlparse
 
 LAYERS = ("api", "ui", "e2e")
 
-#: A recording smaller than this is a truncated file, not a video. The publish
-#: step applies the same floor with `find -size +10240c`, which is this number
+#: A recording smaller than this is a truncated file, not a video. The build
+#: script applies the same floor with `find -size +10240c`, which is this number
 #: written the way find counts: both admit a file of more than 10 KiB.
 MIN_VIDEO_BYTES = 10 * 1024
 
 #: The recordings a run leaves, in the order the page prefers them. Both e2e
 #: cases are recorded and both are far above the floor above, so size cannot
 #: tell them apart; the complete order flow is the one worth showing, and the
-#: run that stops at the payment step is the fallback. The publish step picks
+#: run that stops at the payment step is the fallback. The build script picks
 #: by the same names, in the same order.
 PREFERRED_RECORDINGS = (
     "*guest_can_place_an_order*.webm",
@@ -269,12 +269,12 @@ def _safe_url(url: str) -> str:
 
 
 def _pick_video(video_dir: Path) -> Path | None:
-    """The recording to publish, chosen the way the publish step chooses.
+    """The recording to publish, chosen the way the build script chooses.
 
     Only the two names in ``PREFERRED_RECORDINGS`` are ever the guest purchase
     flow; anything else in the directory is some other recording and must not
     be captioned as if it were that flow. A run that leaves neither preferred
-    file gets no video at all, exactly like ``scripts/publish-showcase.sh``,
+    file gets no video at all, exactly like ``scripts/build-showcase.sh``,
     which has no fallback either.
     """
     usable = sorted(
@@ -291,7 +291,7 @@ def _pick_video(video_dir: Path) -> Path | None:
 def _place(source: Path | None, target: Path) -> bool:
     """Put an optional artefact beside the page. True when the page can use it.
 
-    A file already sitting at the target counts: the publish step may have put
+    A file already sitting at the target counts: the build script may have put
     it there before calling this module.
     """
     if target.is_file() and target.stat().st_size > 0:

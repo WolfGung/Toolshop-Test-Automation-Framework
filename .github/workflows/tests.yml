@@ -62,31 +62,25 @@ jobs:
     runs-on: ubuntu-latest
     needs: stand
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # The site goes to GitHub Pages as an artifact of this run: no branch is
+    # written, so nothing is ever force-pushed and nothing piles up from one
+    # publication to the next.
     permissions:
-      contents: write
-    # Two pushes to main close together start two independent stand+showcase
-    # pairs; without this, whichever showcase happens to finish its own work
-    # last wins the force-push, regardless of which commit is newer. This
-    # group makes publications serialise instead of race: only one showcase
-    # job runs at a time, so there is no window where two of them are both
-    # mid-build and racing on the same `git push --force`.
-    # cancel-in-progress is deliberately false: a cancelled publication can
-    # be interrupted mid-script, and while the assemble-then-single-push
-    # shape means that can never leave gh-pages itself half-written, it
-    # would still waste the run and delay the next one for nothing — a
-    # delayed publication is a strictly better outcome than a cancelled one.
-    # This does not guarantee the newest commit always publishes last (if an
-    # older commit's `stand` job happens to run much slower, its showcase
-    # can still become ready, queue, and run after a newer commit's already
-    # finished); it only guarantees publications never overlap, which is
-    # what makes the outcome deterministic instead of a timing race.
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # One publication at a time, from reading the report history back off the
+    # live site to deploying: two that overlapped would start from the same
+    # history, and whichever deployed last would drop the other's run from the
+    # trend. A deployment under way is never cancelled.
     concurrency:
-      group: showcase-${{ github.ref }}
+      group: pages
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -100,7 +94,7 @@ jobs:
       # publication. `upload-artifact` creates no artifact at all for an empty
       # `videos/`, and `download-artifact` answers that with "Unable to find
       # an artifact", which failed the job outright — so the degradation both
-      # the publish script and showcase/build.py were written for could never
+      # the build script and showcase/build.py were written for could never
       # run. Letting this one step fail leaves `videos/` empty, which is
       # exactly the case they handle: the page says there is nothing to play.
       - uses: actions/download-artifact@v4
@@ -108,10 +102,16 @@ jobs:
         with:
           name: videos
           path: videos
-      - name: Assemble and publish
-        run: bash scripts/publish-showcase.sh allure-results videos
+      - name: Assemble the site
+        run: bash scripts/build-showcase.sh allure-results videos
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SITE_URL: https://wolfgung.github.io/Toolshop-Test-Automation-Framework/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4
 
   api:
     name: API tests

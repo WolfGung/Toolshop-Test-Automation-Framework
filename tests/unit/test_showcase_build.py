@@ -121,7 +121,7 @@ def test_a_recording_that_exists_is_published_beside_the_page(
 def test_an_unrelated_recording_is_not_captioned_as_the_purchase_flow(
     results: Path, tmp_path: Path
 ) -> None:
-    """`_pick_video` must agree with `scripts/publish-showcase.sh`, which has
+    """`_pick_video` must agree with `scripts/build-showcase.sh`, which has
     no fallback: a recording that is neither preferred name is not the guest
     purchase flow, and publishing it under that caption would be wrong."""
     videos = tmp_path / "videos"
@@ -245,7 +245,7 @@ def test_missing_diagrams_are_said_in_words_not_shown_as_broken_images(
 def test_an_artefact_already_in_place_is_used_and_left_alone(
     results: Path, tmp_path: Path
 ) -> None:
-    """The publish step may copy artefacts in before or after this runs."""
+    """The build script may copy artefacts in before or after this runs."""
     out = tmp_path / "site"
     (out / "media").mkdir(parents=True)
     (out / "media" / "checkout.webm").write_bytes(b"already here")
@@ -427,7 +427,7 @@ def test_two_parameters_of_one_test_stay_two_tests(tmp_path: Path) -> None:
 def test_the_complete_order_flow_is_preferred_over_the_shorter_one(
     results: Path, tmp_path: Path
 ) -> None:
-    """The publish step picks by name; this module has to pick the same file."""
+    """The build script picks by name; this module has to pick the same file."""
     videos = tmp_path / "videos"
     videos.mkdir()
     (videos / "guest-checkout-test_guest_can_place_an_order.webm").write_bytes(b"o" * 20_000)

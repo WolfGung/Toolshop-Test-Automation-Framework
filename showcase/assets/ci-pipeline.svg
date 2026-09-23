@@ -2,7 +2,7 @@
      role="img" aria-labelledby="ci-title ci-desc"
      font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
   <title id="ci-title">What CI does with every change</title>
-  <desc id="ci-desc">Three lanes. Top: on every push to main and every pull request, the pipeline starts the stand from four pinned images and seeds it, runs every layer with writes enabled and video recording on, and collects allure-results, the videos and, on failure, the stand's logs. Middle: on main only, the same run restores the Allure history from the gh-pages branch, generates the report, builds this page from the run's own results and publishes to gh-pages, which GitHub Pages serves. Bottom: nightly at 06:00 UTC and on demand, the API suite runs against the public site and a probe checks whether the storefront answers HTTP 200; if it does, the browser suite runs, and if it does not, the run is skipped with a notice rather than failed.</desc>
+  <desc id="ci-desc">Three lanes. Top: on every push to main and every pull request, the pipeline starts the stand from four pinned images and seeds it, runs every layer with writes enabled and video recording on, and collects allure-results, the videos and, on failure, the stand's logs. Middle: on main only, the same run restores the Allure history from the published site, generates the report, builds this page from the run's own results and deploys the site to GitHub Pages, which serves it. Bottom: nightly at 06:00 UTC and on demand, the API suite runs against the public site and a probe checks whether the storefront answers HTTP 200; if it does, the browser suite runs, and if it does not, the run is skipped with a notice rather than failed.</desc>
 
   <!-- The figure is referenced through <img>, so it cannot inherit a colour
        from the host page: it carries its own light plate and dark ink, and
@@ -70,8 +70,8 @@
 
   <rect class="box" x="40" y="294" width="180" height="106" rx="8"/>
   <text class="t2" x="130" y="320" text-anchor="middle">restore the history</text>
-  <text class="m"  x="130" y="342" text-anchor="middle">from the gh-pages</text>
-  <text class="m"  x="130" y="360" text-anchor="middle">branch, so trends live</text>
+  <text class="m"  x="130" y="342" text-anchor="middle">from the published</text>
+  <text class="m"  x="130" y="360" text-anchor="middle">site, so trends live</text>
 
   <rect class="box" x="240" y="294" width="180" height="106" rx="8"/>
   <text class="t2" x="330" y="320" text-anchor="middle">generate the report</text>
@@ -84,7 +84,7 @@
   <text class="m"  x="530" y="360" text-anchor="middle">the run's own results</text>
 
   <rect class="box" x="640" y="294" width="180" height="106" rx="8"/>
-  <text class="t2" x="730" y="320" text-anchor="middle">publish to gh-pages</text>
+  <text class="t2" x="730" y="320" text-anchor="middle">deploy to Pages</text>
   <text class="m"  x="730" y="342" text-anchor="middle">GitHub Pages serves</text>
   <text class="m"  x="730" y="360" text-anchor="middle">the page and the report</text>
 
