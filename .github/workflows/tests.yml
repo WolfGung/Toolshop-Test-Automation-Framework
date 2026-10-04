@@ -20,8 +20,8 @@ jobs:
     # did something neither text mentioned.
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -41,7 +41,7 @@ jobs:
       - name: Stand logs
         if: failure()
         run: docker compose -f docker-compose.stand.yml logs --tail 200
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: allure-results-stand
@@ -50,7 +50,7 @@ jobs:
       # flows, but a run can end with none — and an empty directory is not an
       # error here, so it is not warned about either. What the publish job
       # does when the artefact is missing is handled where it downloads it.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: videos
@@ -80,13 +80,13 @@ jobs:
       group: pages
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: allure-results-stand
           path: allure-results
@@ -97,7 +97,7 @@ jobs:
       # the build script and showcase/build.py were written for could never
       # run. Letting this one step fail leaves `videos/` empty, which is
       # exactly the case they handle: the page says there is nothing to play.
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: videos
@@ -107,11 +107,11 @@ jobs:
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SITE_URL: https://wolfgung.github.io/Toolshop-Test-Automation-Framework/
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   api:
     name: API tests
@@ -120,8 +120,8 @@ jobs:
     # Runs against the public demo shop, which is not ours: it can fail this job, never the run.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -129,7 +129,7 @@ jobs:
       - run: pytest -m api
         env:
           PYTHONPATH: ${{ github.workspace }}/src
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: allure-results-api
@@ -166,8 +166,8 @@ jobs:
     # Runs against the public demo shop, which is not ours: it can fail this job, never the run.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -178,7 +178,7 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/src
           HEADLESS: "true"
           TIMEOUT_MS: "30000"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: allure-results-browser
