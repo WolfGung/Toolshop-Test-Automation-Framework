@@ -11,7 +11,7 @@ on:
 jobs:
   stand:
     name: Full suite on our own stand
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # The gate, and only the gate: a change proposed or landed here. The
     # nightly schedule and a manual dispatch are the watch on the hosted
     # storefront, which is what docs/06 and the pipeline diagram describe, and
@@ -59,7 +59,7 @@ jobs:
 
   showcase:
     name: Publish showcase
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: stand
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     # The site goes to GitHub Pages as an artifact of this run: no branch is
@@ -115,7 +115,7 @@ jobs:
 
   api:
     name: API tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     # Runs against the public demo shop, which is not ours: it can fail this job, never the run.
     continue-on-error: true
@@ -137,7 +137,7 @@ jobs:
 
   reachable:
     name: Storefront reachable from this runner
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     # Probes the public demo shop, which is not ours: this job never fails the run.
     continue-on-error: true
@@ -158,7 +158,7 @@ jobs:
 
   browser:
     name: Browser tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [api, reachable]
     if: >-
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
