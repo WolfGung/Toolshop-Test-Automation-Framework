@@ -95,8 +95,8 @@ def _path(source: str) -> str:
 
 # Every count the project states about itself, with the selection it claims to
 # describe. ``-m ""`` is what the gate job runs when the architecture figure
-# says "run every layer"; the nightly browser job runs ``-m "ui or e2e"``
-# itself. The cover and the README count the product only: three layers, their
+# says "run every layer"; the browser job of hosted-site.yml runs
+# ``-m "ui or e2e"`` itself. The cover and the README count the product only: three layers, their
 # total, and the smoke set drawn from them — which is why neither names a total
 # for the whole run, where the framework's own checks are counted too. Adding a
 # count to a source without adding it here fails the last test in this module.

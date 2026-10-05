@@ -89,15 +89,20 @@ always about the code:
   against the stand, writes included. That run is the gate, and on `main` it
   is also what publishes the showcase page — which is generated from the
   results of the run that had to pass first.
-- **Nightly, and on demand**, the same workflow probes the hosted site, runs
-  the API suite against it, and runs the browser suite only if the probe
-  answered 200. That run is a watch, not a gate: it is how a change in the
-  hosted deployment gets noticed, and it blocks nothing.
+- **When started by hand**, a separate workflow, `hosted-site.yml`, probes
+  the hosted API and runs the API suite against it if it answers, then runs
+  the browser suite only if the storefront answered 200. That run is a check,
+  not a gate: it is how a change in the hosted deployment is looked for, it
+  blocks nothing, and it has no schedule. Being a workflow of its own, it
+  never touches the badge, which reports the stand run on `main`, nor the
+  published report, which comes from that same run.
 
-The reachability probe was kept precisely because it turns an unreachable
+The reachability probes were kept precisely because they turn an unreachable
 environment into a skip with an explanation rather than into a wall of red.
+That workflow goes red only when the hosted site answered and the suite then
+failed.
 
-## When the nightly run reports a skip
+## When the hosted-site run reports a skip
 
 Read it as *"the hosted site could not be reached from this runner"*, and
 nothing more:
@@ -112,7 +117,7 @@ nothing more:
 
 What would deserve attention is the opposite: the probe answering 200 and the
 browser suite then failing. That is the hosted deployment disagreeing with the
-stand, which is the one thing this nightly run exists to find.
+stand, which is the one thing this run exists to find.
 
 Locally the hosted site is reachable, so the browser suite is run there
 (`make ui`, `make e2e`). In a project with a budget, a self-hosted runner on

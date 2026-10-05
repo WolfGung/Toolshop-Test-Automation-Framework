@@ -1,24 +1,19 @@
 name: tests
 
+# The gate: a change proposed or landed here, run against the stand the job
+# starts itself, so a failure is always about the code. Nothing in this file
+# reaches the hosted storefront — that check is hosted-site.yml, started by
+# hand — so the badge bound to this workflow says nothing about anybody else's
+# site.
 on:
   push:
     branches: [main]
   pull_request:
-  schedule:
-    - cron: "0 6 * * *"
-  workflow_dispatch:
 
 jobs:
   stand:
     name: Full suite on our own stand
     runs-on: ubuntu-24.04
-    # The gate, and only the gate: a change proposed or landed here. The
-    # nightly schedule and a manual dispatch are the watch on the hosted
-    # storefront, which is what docs/06 and the pipeline diagram describe, and
-    # what the three jobs below are gated on. Without this the nightly also
-    # brought up the stand and ran the whole suite against it, so the schedule
-    # did something neither text mentioned.
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -112,74 +107,3 @@ jobs:
           path: site
       - id: deployment
         uses: actions/deploy-pages@v5
-
-  api:
-    name: API tests
-    runs-on: ubuntu-24.04
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    # Runs against the public demo shop, which is not ours: it can fail this job, never the run.
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -r requirements.txt
-      - run: pytest -m api
-        env:
-          PYTHONPATH: ${{ github.workspace }}/src
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: allure-results-api
-          path: allure-results
-
-  reachable:
-    name: Storefront reachable from this runner
-    runs-on: ubuntu-24.04
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    # Probes the public demo shop, which is not ours: this job never fails the run.
-    continue-on-error: true
-    outputs:
-      status: ${{ steps.probe.outputs.status }}
-    steps:
-      - id: probe
-        name: Probe the storefront
-        run: |
-          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://practicesoftwaretesting.com) || true
-          echo "status=$code" >> "$GITHUB_OUTPUT"
-          echo "Storefront responded with HTTP $code"
-          if [ "$code" = "000" ]; then
-            echo "::notice title=Browser tests skipped::The hosted storefront did not answer this runner at all: curl reports HTTP 000, meaning no response. The browser suite could not reach the application and did not run, so this says nothing about the product — run the browser tests locally."
-          elif [ "$code" != "200" ]; then
-            echo "::notice title=Browser tests skipped::The hosted storefront answered HTTP $code from this runner. It blocks data-centre IP ranges, so the browser suite cannot reach the application. This is an environment limitation, not a product failure — run the browser tests locally."
-          fi
-
-  browser:
-    name: Browser tests
-    runs-on: ubuntu-24.04
-    needs: [api, reachable]
-    if: >-
-      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
-      && needs.reachable.outputs.status == '200'
-    # Runs against the public demo shop, which is not ours: it can fail this job, never the run.
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -r requirements.txt
-      - run: playwright install --with-deps chromium
-      - run: pytest -m "ui or e2e" --reruns 1 --reruns-delay 2
-        env:
-          PYTHONPATH: ${{ github.workspace }}/src
-          HEADLESS: "true"
-          TIMEOUT_MS: "30000"
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: allure-results-browser
-          path: allure-results

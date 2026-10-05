@@ -1,0 +1,94 @@
+name: hosted site
+
+# The check of the hosted storefront, which belongs to somebody else. It runs
+# only when started by hand, and it is a workflow of its own so that nothing it
+# finds can colour the tests badge or reach the published report: the gate,
+# and the publication, are tests.yml on the stand.
+#
+# An unreachable host is a skip with a notice, never a red run — it says
+# nothing about the product. A red run here means the hosted site answered and
+# disagreed with the suite, which is the one thing this workflow exists to find.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API tests
+    runs-on: ubuntu-24.04
+    steps:
+      - id: probe
+        name: Probe the API
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://api.practicesoftwaretesting.com/products) || true
+          echo "status=$code" >> "$GITHUB_OUTPUT"
+          echo "API responded with HTTP $code"
+          if [ "$code" = "000" ]; then
+            echo "::notice title=API tests skipped::The hosted API did not answer this runner at all: curl reports HTTP 000, meaning no response. The API suite did not run, so this says nothing about the product — run the API tests locally."
+          elif [ "$code" != "200" ]; then
+            echo "::notice title=API tests skipped::The hosted API answered HTTP $code from this runner, so the API suite did not run. This is an environment limitation, not a product failure — run the API tests locally."
+          fi
+      - uses: actions/checkout@v7
+        if: steps.probe.outputs.status == '200'
+      - uses: actions/setup-python@v7
+        if: steps.probe.outputs.status == '200'
+        with:
+          python-version: "3.12"
+          cache: pip
+      - if: steps.probe.outputs.status == '200'
+        run: pip install -r requirements.txt
+      - if: steps.probe.outputs.status == '200'
+        run: pytest -m api --reruns 1 --reruns-delay 2
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.probe.outputs.status == '200'
+        with:
+          name: allure-results-api
+          path: allure-results
+
+  reachable:
+    name: Storefront reachable from this runner
+    runs-on: ubuntu-24.04
+    outputs:
+      status: ${{ steps.probe.outputs.status }}
+    steps:
+      - id: probe
+        name: Probe the storefront
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://practicesoftwaretesting.com) || true
+          echo "status=$code" >> "$GITHUB_OUTPUT"
+          echo "Storefront responded with HTTP $code"
+          if [ "$code" = "000" ]; then
+            echo "::notice title=Browser tests skipped::The hosted storefront did not answer this runner at all: curl reports HTTP 000, meaning no response. The browser suite could not reach the application and did not run, so this says nothing about the product — run the browser tests locally."
+          elif [ "$code" != "200" ]; then
+            echo "::notice title=Browser tests skipped::The hosted storefront answered HTTP $code from this runner. It blocks data-centre IP ranges, so the browser suite cannot reach the application. This is an environment limitation, not a product failure — run the browser tests locally."
+          fi
+
+  browser:
+    name: Browser tests
+    runs-on: ubuntu-24.04
+    needs: [api, reachable]
+    # The API suite goes first, as it always has: when the data under the
+    # storefront is wrong, the browser suite would only repeat the news.
+    if: needs.api.result == 'success' && needs.reachable.outputs.status == '200'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: playwright install --with-deps chromium
+      - run: pytest -m "ui or e2e" --reruns 1 --reruns-delay 2
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+          HEADLESS: "true"
+          TIMEOUT_MS: "30000"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: allure-results-browser
+          path: allure-results

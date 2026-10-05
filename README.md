@@ -65,7 +65,7 @@ down here and each decision is traceable to the test that implements it.
 | [Test strategy](docs/03-test-strategy.md) | Which layer each check belongs at, and how a shared environment shapes the design |
 | [Test design](docs/04-test-design-contact-form.md) | A worked example: equivalence classes and boundaries for one feature |
 | [Defect reporting](docs/05-defect-reporting.md) | The template, plus a finding that was verified and closed rather than filed |
-| [Environments and CI](docs/06-environments-and-ci.md) | Why the suite runs against two environments, what each is allowed to do, and how to read a skipped nightly run |
+| [Environments and CI](docs/06-environments-and-ci.md) | Why the suite runs against two environments, what each is allowed to do, and how to read a skipped run against the hosted site |
 
 ## Stack
 
@@ -117,12 +117,13 @@ so there the write paths run for real.
 
 That is also how the pipeline is split. The stand run is the gate on every
 pull request and every push to `main`, because a failure there is always about
-the code. The hosted site is watched nightly, and that run skips its browser
-job, with a notice, when the site answers 403 to the runner's address range.
+the code. The hosted site is checked by a separate workflow, started by hand,
+and that run skips its browser job, with a notice, when the site answers 403 to
+the runner's address range.
 
 [Environments and CI](docs/06-environments-and-ci.md) sets out what each
 environment is allowed to do, why the stand's images are pinned by digest, and
-what a skipped nightly run does and does not mean.
+what a skipped run against the hosted site does and does not mean.
 
 ## Running the suite
 
@@ -206,8 +207,12 @@ including failures, and on `main` the same run publishes
 [the showcase page and its report](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/)
 from its own results.
 
-Nightly, and on demand, the workflow also runs against the hosted site: the
-API suite, and the browser suite behind a reachability probe.
+A second workflow, `.github/workflows/hosted-site.yml`, runs against the
+hosted site when it is started by hand: the API suite, and the browser suite
+behind a reachability probe. It has no schedule, publishes nothing and is not
+the one the badge reports, so a site outside this repository can never turn
+the badge red; a host that does not answer is a skip with a notice, and only
+a hosted site that answers and disagrees with the suite fails that run.
 
 ### The browser job is gated on reachability
 
@@ -217,9 +222,9 @@ lying: nothing about the product is broken, the environment simply cannot be
 reached.
 
 So a preflight job probes the storefront and the browser job runs only on a
-200. Otherwise it is skipped with a notice explaining why. Nothing is gated on
-that run — the stand run is the gate, and it does not depend on anyone else's
-deployment.
+200. Otherwise it is skipped with a notice explaining why; the API suite is
+probed the same way before it runs. Nothing is gated on that run — the stand
+run is the gate, and it does not depend on anyone else's deployment.
 
 Two things follow from this, and both are deliberate:
 

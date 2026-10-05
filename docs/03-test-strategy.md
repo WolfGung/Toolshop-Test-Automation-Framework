@@ -21,8 +21,8 @@ Only behaviour that a user can actually see is driven through a browser.
 | --- | --- | --- |
 | `smoke` | Risks 1–6 from the risk analysis — High or Critical | Every deploy, every pull request |
 | `api` | API-only, no browser | On every push; fastest feedback |
-| `ui` | Browser tests | Pull requests and nightly |
-| `e2e` | Full flows | Pull requests and nightly |
+| `ui` | Browser tests | Every pull request and push, on the stand; on demand against the hosted site |
+| `e2e` | Full flows | Every pull request and push, on the stand; on demand against the hosted site |
 | `negative`, `boundary` | Invalid input and limits | Full suite |
 | `creates_data` | Writes to the shared backend | Opt in explicitly |
 
