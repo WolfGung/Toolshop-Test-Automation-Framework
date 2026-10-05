@@ -42,7 +42,7 @@ both published by [the pipeline that had to pass first](https://wolfgung.github.
 
 [![The Allure report of a full run against the stand: every case green, with the environment it ran in](allure-report-screenshot.png)](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/)
 
-[![The run page of the tests workflow on a push to main: a green verdict, the list of jobs beside the graph of them, and the stand job the publication waits on](showcase/images/ci-run.png)](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/runs/35781310396)
+[![The run page of the tests workflow on a push to main: a green verdict, the list of jobs beside the graph of them, and the stand job the publication waits on](showcase/images/ci-run.png)](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/runs/37370382620)
 
 Both are photographs of the real thing, taken by `scripts/make-assets.py` — the
 run page with `--ci-run`, the report with the report generated and served
