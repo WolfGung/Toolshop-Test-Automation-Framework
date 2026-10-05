@@ -3,7 +3,7 @@
 A test automation framework built from scratch for an online shop:
 32 automated cases across the API, the browser and a checkout flow, run in CI on every push.
 
-[![tests](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml/badge.svg)](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml)
+[![tests](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml/badge.svg?branch=main&event=push)](https://github.com/WolfGung/Toolshop-Test-Automation-Framework/actions/workflows/tests.yml?query=branch%3Amain+event%3Apush)
 [![live report](https://img.shields.io/badge/live%20report-Allure-brightgreen)](https://wolfgung.github.io/Toolshop-Test-Automation-Framework/report/)
 [![python](https://img.shields.io/badge/python-3.11%2B-blue)](requirements.txt)
 [![license: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
